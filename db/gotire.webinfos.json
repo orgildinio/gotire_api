@@ -1,0 +1,16 @@
+[{
+  "_id": {
+    "$oid": "62823833d593e57b27da3fff"
+  },
+  "email": "info@zana-anada.com",
+  "phone": "8888888",
+  "name": "zaya-anada.com",
+  "address": "zaya anada",
+  "siteInfo": "Zaya’s Ananda далд ухамсар, энерги мэдээлэл судалгааны төв, нийтийн далд ухамсарыг сэрээх төв",
+  "policy": "<p style=\"text-align: center;\"><iframe title=\"YouTube video player\" src=\"https://www.youtube.com/embed/vP5USLyn2Aw\" width=\"560\" height=\"315\" frameborder=\"0\" allowfullscreen=\"allowfullscreen\"></iframe></p>\r\n<p style=\"text-align: center;\">&nbsp;</p>\r\n<p style=\"text-align: left;\">Zaya&rsquo;s Ananda далд ухамсар, энерги мэдээлэл судалгааны төв, нийтийн далд ухамсарыг сэрээх төв</p>",
+  "logo": "1686196755703_photo_logo_zayalogo.png",
+  "whiteLogo": "1686196762307_photo_logo_zayawhite.png",
+  "updateAt": {
+    "$date": "2022-05-16T11:43:35.923Z"
+  }
+}]

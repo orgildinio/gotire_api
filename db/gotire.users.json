@@ -1,0 +1,51 @@
+[{
+  "_id": {
+    "$oid": "64a0fa4330aa6944018c96e1"
+  },
+  "status": true,
+  "position": "Teacher",
+  "role": "admin",
+  "username": "Tuvshinbat",
+  "email": "tuvshinbat596@gmail.com",
+  "image": null,
+  "gender": "male",
+  "age": 0,
+  "password": "$2b$10$ul.DGG2N.5oJH7UTVN0MH.aoNKzTcnM6ghSbtg3eo5snkFLTvHAEy",
+  "createUser": {
+    "$oid": "635a57ece393ed7df65b1b20"
+  },
+  "entryData": {
+    "$date": "2022-10-27T10:05:32.106Z"
+  },
+  "createAt": {
+    "$date": "2022-12-07T16:19:58.704Z"
+  },
+  "updateAt": {
+    "$date": "2023-05-24T15:13:27.136Z"
+  },
+  "__v": 62,
+  "entryDate": {
+    "$date": "2022-12-07T16:19:58.702Z"
+  },
+  "updateUser": {
+    "$oid": "635a57ece393ed7df65b1b20"
+  },
+  "firstName": "Tuvshinbat",
+  "lastName": "Bayandelger",
+  "phoneNumber": 88011197,
+  "courses": [
+    {
+      "$oid": "649023bfe2c00ae93dd3264c"
+    },
+    {
+      "$oid": "649058d961545d7f47cda20d"
+    },
+    {
+      "$oid": "6490580a61545d7f47cda1cb"
+    }
+  ],
+  "resetPasswordExpire": {
+    "$date": "2023-06-16T19:47:01.390Z"
+  },
+  "resetPasswordToken": "247244"
+}]
