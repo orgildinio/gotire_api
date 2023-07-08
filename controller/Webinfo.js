@@ -1,9 +1,8 @@
 const WebInfo = require("../models/Webinfo");
-
 const MyError = require("../utils/myError");
 const asyncHandler = require("express-async-handler");
 // const fs = require("fs");
-const paginate = require("../utils/paginate");
+
 const { imageDelete } = require("../lib/photoUpload");
 const { valueRequired } = require("../lib/check");
 
