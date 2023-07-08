@@ -1,5 +1,5 @@
 const WebInfo = require("../models/Webinfo");
-const User = require("../models/User");
+
 const MyError = require("../utils/myError");
 const asyncHandler = require("express-async-handler");
 // const fs = require("fs");
