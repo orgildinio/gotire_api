@@ -71,6 +71,19 @@ exports.createOrder = asyncHandler(async (req, res) => {
   });
 });
 
+exports.getTodayCount = asyncHandler(async (req, res) => {
+  const start = new Date().toDateString();
+
+  const count = await Order.find({
+    createdAt: { $gte: start },
+  }).count();
+
+  res.status(200).json({
+    success: true,
+    count,
+  });
+});
+
 exports.getOrders = asyncHandler(async (req, res) => {
   // Эхлээд query - уудаа аваад хоосон үгүйг шалгаад утга олгох
   const page = parseInt(req.query.page) || 1;

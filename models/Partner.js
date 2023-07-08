@@ -24,19 +24,6 @@ const PartnerSchema = new mongoose.Schema({
     type: String,
   },
 
-  companyInfo: {
-    type: String,
-  },
-
-  cover: {
-    type: String,
-  },
-
-  views: {
-    type: Number,
-    default: 0,
-  },
-
   createAt: {
     type: Date,
     default: Date.now,

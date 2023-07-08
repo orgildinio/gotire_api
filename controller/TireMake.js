@@ -90,6 +90,7 @@ exports.getTireMakes = asyncHandler(async (req, res, next) => {
   query.select(select);
   query.populate("createUser");
   query.populate("updateUser");
+  query.populate("tireCount");
 
   const qc = query.toConstructor();
   const clonedQuery = new qc();
@@ -175,6 +176,7 @@ const getFullData = async (req, page) => {
   }
 
   query.select(select);
+  query.populate("tireCount");
   query.populate({ path: "createUser", select: "firstName -_id" });
   query.populate({ path: "updateUser", select: "firstName -_id" });
 
@@ -261,6 +263,7 @@ exports.excelData = asyncHandler(async (req, res) => {
   query.select(select);
   query.populate("createUser");
   query.populate("updateUser");
+  query.populate("tireCount");
 
   const qc = query.toConstructor();
   const clonedQuery = new qc();
@@ -299,7 +302,7 @@ exports.multDeleteTireMake = asyncHandler(async (req, res, next) => {
 });
 
 exports.getTireMake = asyncHandler(async (req, res, next) => {
-  const tireMake = await TireMake.findById(req.params.id);
+  const tireMake = await TireMake.findById(req.params.id).populate("tireCount");
 
   if (!tireMake) {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);

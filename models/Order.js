@@ -60,24 +60,6 @@ const OrderSchema = new mongoose.Schema({
     },
   ],
 
-  // set: [
-  //   {
-  //     productInfo: {
-  //       type: mongoose.Schema.ObjectId,
-  //       ref: "set",
-  //     },
-  //     picture: {
-  //       type: String,
-  //     },
-  //     name: {
-  //       type: String,
-  //     },
-  //     price: {
-  //       type: Number,
-  //     },
-  //   },
-  // ],
-
   totalPrice: {
     type: Number,
     trim: true,

@@ -54,15 +54,15 @@ var whitelist = [
   "http://localhost:3000",
   "http://localhost:3001",
 
-  "http://zaya-ananda.com",
-  "http://www.zaya-ananda.com",
-  "http://admin-zaya-ananda.com",
-  "http://www.admin-zaya-ananda.com",
+  "http://gotire.mn",
+  "http://www.gotire.mn",
+  "http://admin.gotire.mn",
+  "http://www.admin.gotire.mn",
 
-  "https://zaya-ananda.com",
-  "https://www.zaya-ananda.com",
-  "https://admin-zaya-ananda.com",
-  "https://www.admin-zaya-ananda.com",
+  "https://gotire.mn",
+  "https://www.gotire.mn",
+  "https://admin.gotire.mn",
+  "https://www.admin.gotire.mn",
 ];
 
 // Өөр домэйн дээр байрлах клиент вэб аппуудаас шаардах шаардлагуудыг энд тодорхойлно

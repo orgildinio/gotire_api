@@ -1,10 +1,27 @@
 const mongoose = require("mongoose");
 
 const WheelSchema = new mongoose.Schema({
+  wheelCode: {
+    type: String,
+    trim: true,
+  },
+
   status: {
     type: Boolean,
     enum: [true, false],
     default: true,
+  },
+
+  star: {
+    type: Boolean,
+    enum: [true, false],
+    default: false,
+  },
+
+  isDiscount: {
+    type: Boolean,
+    enum: [true, false],
+    default: false,
   },
 
   slug: {
@@ -26,12 +43,13 @@ const WheelSchema = new mongoose.Schema({
   height: {
     type: Number,
     trim: true,
+    required: [true, "Өндрийг оруулна уу"],
   },
 
   boltPattern: {
     type: String,
     trim: true,
-    required: [true, "Болтны нүхний зайг оруулна уу"],
+    required: [true, "Болтны хоорондын зайны хэмжээ оруулна уу"],
   },
 
   inSet: {
@@ -44,13 +62,20 @@ const WheelSchema = new mongoose.Schema({
     trim: true,
   },
 
+  rim: {
+    type: String,
+    trim: true,
+    required: [true, "RIM Хэмжээ оруулна уу"],
+  },
+
   threadSize: {
     type: String,
     trim: true,
   },
 
   centerBore: {
-    type: mongoose.Decimal128,
+    type: String,
+    trim: true,
   },
 
   price: {
@@ -78,6 +103,11 @@ const WheelSchema = new mongoose.Schema({
 
   pictures: {
     type: [String],
+  },
+
+  views: {
+    type: Number,
+    default: 0,
   },
 
   createAt: {

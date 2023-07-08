@@ -9,12 +9,19 @@ const {
   updateTire,
   multDeleteTire,
   getSlugTire,
+  tireGroups,
+  tireGroup,
+  getSearchDatas,
 } = require("../controller/Tire");
 
 router
   .route("/")
   .post(protect, authorize("admin", "operator"), createTire)
   .get(getTires);
+
+router.route("/mostsearch").get(getSearchDatas);
+router.route("/groups").get(tireGroups);
+router.route("/groups/:group").get(tireGroup);
 
 router.route("/slug/:slug").get(getSlugTire);
 

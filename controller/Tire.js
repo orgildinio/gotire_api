@@ -12,15 +12,46 @@ const {
   useTireModal,
   RegexOptions,
 } = require("../lib/searchOfterModel");
+const TireModal = require("../models/TireModal");
 
 exports.createTire = asyncHandler(async (req, res, next) => {
   req.body.createUser = req.userId;
   req.body.status = (valueRequired(req.body.status) && req.body.status) || true;
+  req.body.width = parseInt(req.body.width);
+  req.body.height = parseInt(req.body.height);
+  req.body.diameter = parseInt(req.body.diameter);
 
   const uniqueName = await Tire.find({ name: req.body.name });
   if (uniqueName.length > 0) {
-    req.body.slug = slugify(uniqueName + "_" + uniqueName.length);
+    req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
   }
+
+  let orderNumber = 1;
+  let modalShort = "";
+  const lastTireCode = await Tire.findOne({}).sort({ createAt: -1 });
+
+  if (lastTireCode) {
+    const order = lastTireCode.tireCode.split("-");
+    const code = parseInt(order[2]);
+    orderNumber = orderNumber + code;
+  }
+
+  if (valueRequired(req.body.modal)) {
+    const result = await TireModal.findById(req.body.modal);
+
+    if (result) {
+      modalShort = result.shortName;
+    }
+  }
+  req.body.tireCode =
+    "T" +
+    req.body.diameter +
+    req.body.width +
+    req.body.height +
+    "-" +
+    modalShort +
+    "-" +
+    orderNumber;
 
   const tire = await Tire.create(req.body);
 
@@ -28,6 +59,10 @@ exports.createTire = asyncHandler(async (req, res, next) => {
     success: true,
     data: tire,
   });
+});
+
+exports.getMostTire = asyncHandler(async (req, res) => {
+  const limit = 18;
 });
 
 exports.getTires = asyncHandler(async (req, res, next) => {
@@ -66,7 +101,7 @@ exports.getTires = asyncHandler(async (req, res, next) => {
   const maxDiscount = req.query.maxDiscount;
   const minSetOf = req.query.minSetOf;
   const maxSetOf = req.query.maxSetOf;
-
+  const tireCode = req.query.tireCode;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
 
@@ -89,7 +124,7 @@ exports.getTires = asyncHandler(async (req, res, next) => {
       }
     }
   }
-
+  if (valueRequired(tireCode)) query.find({ tireCode: RegexOptions(tireCode) });
   if (valueRequired(modal)) {
     let arrayModal = modal.split(",");
     if (arrayModal.length > 0) {
@@ -289,6 +324,36 @@ exports.getTires = asyncHandler(async (req, res, next) => {
   });
 });
 
+exports.getSearchDatas = asyncHandler(async (req, res) => {
+  const tires = await Tire.aggregate([
+    {
+      $group: {
+        id: { $push: "$_id" },
+        slug: { $push: "$slug" },
+        _id: { width: "$width", height: "$height", diameter: "$diameter" },
+      },
+    },
+
+    {
+      $project: {
+        _id: { $first: "$id" },
+        slug: { $first: "$slug" },
+        width: "$_id.width",
+        height: "$_id.height",
+        diameter: "$_id.diameter",
+        count: "$count",
+      },
+    },
+    { $sort: { views: -1 } },
+    { $limit: 18 },
+  ]);
+
+  res.status(200).json({
+    success: true,
+    data: tires,
+  });
+});
+
 const getFullData = async (req, page) => {
   const limit = 25;
   const select = req.query.select;
@@ -298,6 +363,7 @@ const getFullData = async (req, page) => {
   const star = req.query.star;
   const name = req.query.name;
   const type = req.query.type;
+  const tireCode = req.query.tireCode;
   const categories = req.query.categories;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
@@ -309,7 +375,7 @@ const getFullData = async (req, page) => {
       query.where("status").in(status.split(","));
     } else query.where("status").equals(status);
   }
-
+  if (valueRequired(tireCode)) query.find({ tireCode: RegexOptions(tireCode) });
   if (valueRequired(name))
     query.find({ name: { $regex: ".*" + name + ".*", $options: "i" } });
 
@@ -358,8 +424,8 @@ const getFullData = async (req, page) => {
     }
   }
 
-  query.populate({ path: "categories", select: "name -_id" });
   query.select(select);
+
   query.populate({ path: "createUser", select: "firstName -_id" });
   query.populate({ path: "updateUser", select: "firstName -_id" });
 
@@ -375,6 +441,113 @@ const getFullData = async (req, page) => {
   return tire;
 };
 
+exports.tireGroups = asyncHandler(async (req, res) => {
+  const widthQuery = req.query.width || null;
+  const heightQuery = req.query.height || null;
+
+  const width = await Tire.aggregate([
+    { $group: { _id: "$width", count: { $sum: 1 } } },
+    {
+      $project: {
+        name: "$_id",
+        count: "$count",
+      },
+    },
+  ]);
+
+  let height = "";
+
+  if (valueRequired(widthQuery)) {
+    height = await Tire.aggregate([
+      {
+        $match: {
+          width: parseInt(widthQuery),
+        },
+      },
+      { $group: { _id: "$height", count: { $sum: 1 } } },
+      {
+        $project: {
+          name: "$_id",
+          count: "$count",
+        },
+      },
+    ]);
+  } else {
+    height = await Tire.aggregate([
+      { $group: { _id: "$height", count: { $sum: 1 } } },
+      {
+        $project: {
+          name: "$_id",
+          count: "$count",
+        },
+      },
+    ]);
+  }
+
+  let diameter = "";
+
+  if (valueRequired(heightQuery) && valueRequired(widthQuery)) {
+    diameter = await Tire.aggregate([
+      {
+        $match: {
+          $and: [
+            { width: parseInt(widthQuery) },
+            { height: parseInt(heightQuery) },
+          ],
+        },
+      },
+      { $group: { _id: "$diameter", count: { $sum: 1 } } },
+      {
+        $project: {
+          name: "$_id",
+          count: "$count",
+        },
+      },
+    ]);
+  } else {
+    diameter = await Tire.aggregate([
+      { $group: { _id: "$diameter", count: { $sum: 1 } } },
+      {
+        $project: {
+          name: "$_id",
+          count: "$count",
+        },
+      },
+    ]);
+  }
+
+  res.status(200).json({
+    success: true,
+    diameter,
+    height,
+    width,
+  });
+});
+
+exports.tireGroup = asyncHandler(async (req, res) => {
+  const groupName = req.params.group;
+  const limit = parseInt(req.query.limit) || 100;
+  let groupFiled;
+  if (groupName) groupFiled = "$" + groupName;
+
+  const group = await Tire.aggregate([
+    { $group: { _id: groupFiled, count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+    { $limit: limit },
+    {
+      $project: {
+        name: "$_id",
+        count: "$count",
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    success: true,
+    data: group,
+  });
+});
+
 exports.excelData = asyncHandler(async (req, res) => {
   const page = req.query.page || 1;
   const limit = 25;
@@ -389,7 +562,7 @@ exports.excelData = asyncHandler(async (req, res) => {
   const categories = req.query.categories;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
-
+  const tireCode = req.query.tireCode;
   const query = Tire.find();
 
   if (valueRequired(status)) {
@@ -404,7 +577,7 @@ exports.excelData = asyncHandler(async (req, res) => {
       query.where("star").in(star.split(","));
     } else query.where("star").equals(star);
   }
-
+  if (valueRequired(tireCode)) query.find({ tireCode: RegexOptions(tireCode) });
   if (valueRequired(type)) {
     query.find({ type: { $regex: ".*" + type + ".*", $options: "i" } });
   }
@@ -505,10 +678,7 @@ exports.multDeleteTire = asyncHandler(async (req, res, next) => {
 });
 
 exports.getTire = asyncHandler(async (req, res, next) => {
-  const tire = await Tire.findById(req.params.id).populate("categories");
-
-  tire.views = tire.views + 1;
-  tire.save();
+  const tire = await Tire.findById(req.params.id);
 
   if (!tire) {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);
@@ -528,11 +698,9 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
   }
 
   const name = req.body.name;
-  const nameUnique = await Tire.find({}).where("name").equals(name);
-
-  if (nameUnique.length > 1) {
-    req.body.slug =
-      nameUnique[nameUnique.length - 1].slug + (nameUnique + 1).toString();
+  const uniqueName = await Tire.find({ name: req.body.name });
+  if (uniqueName.length > 1) {
+    req.body.slug = slugify(req.body.name + "_" + uniqueName.length + 1);
   } else {
     req.body.slug = slugify(name);
   }
@@ -541,17 +709,32 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
     req.body.pictures = [];
   }
 
-  if (valueRequired(req.body.audios) === false) {
-    req.body.audios = [];
+  let orderNumber = 1;
+  let modalShort = "";
+  const lastTireCode = await Tire.findOne({}).sort({ createAt: -1 });
+
+  if (lastTireCode) {
+    const order = lastTireCode.tireCode.split("-");
+    const code = parseInt(order[2]);
+    orderNumber = orderNumber + code;
   }
 
-  if (valueRequired(req.body.videos) === false) {
-    req.body.videos = [];
-  }
+  if (valueRequired(req.body.modal)) {
+    const result = await TireModal.findById(req.body.modal);
 
-  if (valueRequired(req.body.categories) === false) {
-    req.body.categories = [];
+    if (result) {
+      modalShort = result.shortName;
+    }
   }
+  req.body.tireCode =
+    "T" +
+    req.body.diameter +
+    req.body.width +
+    req.body.height +
+    "-" +
+    modalShort +
+    "-" +
+    orderNumber;
 
   req.body.updateUser = req.userId;
   req.body.updateAt = Date.now();

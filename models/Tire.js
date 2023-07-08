@@ -1,6 +1,22 @@
 const mongoose = require("mongoose");
 
 const TireSchema = new mongoose.Schema({
+  tireCode: {
+    type: String,
+  },
+
+  star: {
+    type: Boolean,
+    enum: [true, false],
+    default: false,
+  },
+
+  isDiscount: {
+    type: Boolean,
+    enum: [true, false],
+    default: false,
+  },
+
   status: {
     type: Boolean,
     enum: [true, false],

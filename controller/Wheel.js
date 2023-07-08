@@ -14,14 +14,116 @@ exports.createWheel = asyncHandler(async (req, res, next) => {
 
   const uniqueName = await Wheel.find({ name: req.body.name });
   if (uniqueName.length > 0) {
-    req.body.slug = slugify(uniqueName + "_" + uniqueName.length);
+    req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
   }
+
+  let orderNumber = 1;
+
+  const lastWheelCode = await Wheel.findOne({}).sort({ createAt: -1 });
+
+  if (lastWheelCode) {
+    const order = lastWheelCode.wheelCode.split("-");
+    const code = parseInt(order[1]);
+    orderNumber = orderNumber + code;
+  }
+
+  req.body.wheelCode =
+    "W" + req.body.diameter + "H" + req.body.boltPattern + "-" + orderNumber;
+
+  req.body.diameter = parseInt(req.body.diameter);
+  req.body.height = parseInt(req.body.height);
+  req.body.setOf = parseInt(req.body.setOf);
 
   const wheel = await Wheel.create(req.body);
 
   res.status(200).json({
     success: true,
     data: wheel,
+  });
+});
+
+exports.wheelGroups = asyncHandler(async (req, res) => {
+  const diameter = await Wheel.aggregate([
+    { $group: { _id: "$diameter", count: { $sum: 1 } } },
+    {
+      $project: {
+        name: "$_id",
+        count: "$count",
+      },
+    },
+  ]);
+
+  const height = await Wheel.aggregate([
+    { $group: { _id: "$height", count: { $sum: 1 } } },
+    {
+      $project: {
+        name: "$_id",
+        count: "$count",
+      },
+    },
+  ]);
+
+  const boltPattern = await Wheel.aggregate([
+    { $group: { _id: "$boltPattern", count: { $sum: 1 } } },
+    {
+      $project: {
+        name: "$_id",
+        count: "$count",
+      },
+    },
+  ]);
+
+  const rim = await Wheel.aggregate([
+    { $group: { _id: "$rim", count: { $sum: 1 } } },
+    {
+      $project: {
+        name: "$_id",
+        count: "$count",
+      },
+    },
+  ]);
+
+  const threadSize = await Wheel.aggregate([
+    { $group: { _id: "$threadSize", count: { $sum: 1 } } },
+    {
+      $project: {
+        name: "$_id",
+        count: "$count",
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    success: true,
+    diameter,
+    height,
+    boltPattern,
+    rim,
+    threadSize,
+  });
+});
+
+exports.wheelGroup = asyncHandler(async (req, res) => {
+  const groupName = req.params.group;
+  const limit = parseInt(req.query.limit) || 100;
+  let groupFiled;
+  if (groupName) groupFiled = "$" + groupName;
+
+  const group = await Wheel.aggregate([
+    { $group: { _id: groupFiled, count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+    { $limit: limit },
+    {
+      $project: {
+        name: "$_id",
+        count: "$count",
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    success: true,
+    data: group,
   });
 });
 
@@ -52,7 +154,7 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
   const maxPrice = req.query.maxPrice;
   const minDiscount = req.query.minDiscount;
   const maxDiscount = req.query.maxDiscount;
-
+  const wheelCode = req.query.wheelCode;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
 
@@ -64,6 +166,8 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
     } else query.where("status").equals(status);
   }
 
+  if (valueRequired(wheelCode))
+    query.find({ wheelCode: RegexOptions(wheelCode) });
   if (valueRequired(name)) query.find({ name: RegexOptions(name) });
   if (valueRequired(height)) query.find({ height: RegexOptions(height) });
   if (valueRequired(diameter)) query.find({ diameter: RegexOptions(diameter) });
@@ -212,7 +316,7 @@ const getFullData = async (req, page) => {
   const price = req.query.price;
   const discount = req.query.discount;
   const setOf = req.query.setOf;
-
+  const wheelCode = req.query.wheelCode;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
 
@@ -224,6 +328,8 @@ const getFullData = async (req, page) => {
     } else query.where("status").equals(status);
   }
 
+  if (valueRequired(wheelCode))
+    query.find({ wheelCode: RegexOptions(wheelCode) });
   if (valueRequired(name)) query.find({ name: RegexOptions(name) });
   if (valueRequired(height)) query.find({ height: RegexOptions(height) });
   if (valueRequired(diameter)) query.find({ diameter: RegexOptions(diameter) });
@@ -317,7 +423,7 @@ exports.excelData = asyncHandler(async (req, res) => {
   const price = req.query.price;
   const discount = req.query.discount;
   const setOf = req.query.setOf;
-
+  const wheelCode = req.query.wheelCode;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
 
@@ -329,6 +435,8 @@ exports.excelData = asyncHandler(async (req, res) => {
     } else query.where("status").equals(status);
   }
 
+  if (valueRequired(wheelCode))
+    query.find({ wheelCode: RegexOptions(wheelCode) });
   if (valueRequired(name)) query.find({ name: RegexOptions(name) });
   if (valueRequired(height)) query.find({ height: RegexOptions(height) });
   if (valueRequired(diameter)) query.find({ diameter: RegexOptions(diameter) });
@@ -427,11 +535,8 @@ exports.multDeleteWheel = asyncHandler(async (req, res, next) => {
   });
 });
 
-exports.getWheel = asyncHandler(async (req, res, next) => {
-  const wheel = await Wheel.findById(req.params.id).populate("categories");
-
-  wheel.views = wheel.views + 1;
-  wheel.save();
+exports.getWheel = asyncHandler(async (req, res) => {
+  const wheel = await Wheel.findById(req.params.id);
 
   if (!wheel) {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);
@@ -447,15 +552,14 @@ exports.updateWheel = asyncHandler(async (req, res, next) => {
   let wheel = await Wheel.findById(req.params.id);
 
   if (!wheel) {
-    throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);
+    throw new MyError("Тухайн өгөгдөл олдсонгүй олдсонгүй. ", 404);
   }
 
   const name = req.body.name;
   const nameUnique = await Wheel.find({}).where("name").equals(name);
 
   if (nameUnique.length > 1) {
-    req.body.slug =
-      nameUnique[nameUnique.length - 1].slug + (nameUnique + 1).toString();
+    req.body.slug = slugify(req.body.name + "_" + nameUnique.length + 1);
   } else {
     req.body.slug = slugify(name);
   }
@@ -464,17 +568,18 @@ exports.updateWheel = asyncHandler(async (req, res, next) => {
     req.body.pictures = [];
   }
 
-  if (valueRequired(req.body.audios) === false) {
-    req.body.audios = [];
+  let orderNumber = 1;
+
+  const lastWheelCode = await Wheel.findOne({}).sort({ createAt: -1 });
+
+  if (lastWheelCode) {
+    const order = lastWheelCode.wheelCode.split("-");
+    const code = parseInt(order[1]);
+    orderNumber = orderNumber + code;
   }
 
-  if (valueRequired(req.body.videos) === false) {
-    req.body.videos = [];
-  }
-
-  if (valueRequired(req.body.categories) === false) {
-    req.body.categories = [];
-  }
+  req.body.wheelCode =
+    "W" + req.body.diameter + "H" + req.body.boltPattern + "-" + orderNumber;
 
   req.body.updateUser = req.userId;
   req.body.updateAt = Date.now();

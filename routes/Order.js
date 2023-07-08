@@ -9,6 +9,7 @@ const {
   multDeleteOrder,
   updateOrder,
   getOrder,
+  getTodayCount,
 } = require("../controller/Order");
 
 router
@@ -16,6 +17,7 @@ router
   .post(protect, createOrder)
   .get(protect, authorize("admin", "operator"), getOrders);
 
+router.route("/todaycount").get(protect, getTodayCount);
 router
   .route("/count")
   .get(protect, authorize("admin", "operator"), getCountOrder);

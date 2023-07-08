@@ -98,6 +98,7 @@ const PageSchema = new mongoose.Schema({
 
   views: {
     type: Number,
+    default: 0,
   },
 
   createAt: {
