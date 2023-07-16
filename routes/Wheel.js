@@ -11,6 +11,7 @@ const {
   getSlugWheel,
   wheelGroups,
   wheelGroup,
+  wheelSearchControl,
 } = require("../controller/Wheel");
 
 router
@@ -18,6 +19,7 @@ router
   .post(protect, authorize("admin", "operator"), createWheel)
   .get(getWheels);
 
+router.route("/search").get(wheelSearchControl);
 router.route("/groups").get(wheelGroups);
 router.route("/groups/:group").get(wheelGroup);
 router.route("/slug/:slug").get(getSlugWheel);

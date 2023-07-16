@@ -106,6 +106,10 @@ const TireSchema = new mongoose.Schema({
     type: [String],
   },
 
+  delivery: {
+    type: String,
+  },
+
   views: {
     type: Number,
     default: 0,

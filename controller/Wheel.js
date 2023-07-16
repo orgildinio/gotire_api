@@ -15,6 +15,8 @@ exports.createWheel = asyncHandler(async (req, res, next) => {
   const uniqueName = await Wheel.find({ name: req.body.name });
   if (uniqueName.length > 0) {
     req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
+  } else {
+    req.body.slug = slugify(req.body.name);
   }
 
   let orderNumber = 1;
@@ -31,7 +33,7 @@ exports.createWheel = asyncHandler(async (req, res, next) => {
     "W" + req.body.diameter + "H" + req.body.boltPattern + "-" + orderNumber;
 
   req.body.diameter = parseInt(req.body.diameter);
-  req.body.height = parseInt(req.body.height);
+  req.body.width = parseInt(req.body.width);
   req.body.setOf = parseInt(req.body.setOf);
 
   const wheel = await Wheel.create(req.body);
@@ -53,8 +55,8 @@ exports.wheelGroups = asyncHandler(async (req, res) => {
     },
   ]);
 
-  const height = await Wheel.aggregate([
-    { $group: { _id: "$height", count: { $sum: 1 } } },
+  const width = await Wheel.aggregate([
+    { $group: { _id: "$width", count: { $sum: 1 } } },
     {
       $project: {
         name: "$_id",
@@ -96,7 +98,7 @@ exports.wheelGroups = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     diameter,
-    height,
+    width,
     boltPattern,
     rim,
     threadSize,
@@ -133,23 +135,27 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
   let sort = req.query.sort || { createAt: -1 };
   const select = req.query.select;
 
+  const fields = [
+    "diameter",
+    "width",
+    "boltPattern",
+    "inSet",
+    "offSet",
+    "threadSize",
+    "centerBore",
+    "setOf",
+    "rim",
+  ];
+
   // NEWS FIELDS
   const status = req.query.status;
   const name = req.query.name;
-  const diameter = req.query.diameter;
-  const height = req.query.height;
-  const boltPattern = req.query.boltPattern;
-  const inSet = req.query.inSet;
-  const offSet = req.query.offSet;
-  const threadSize = req.query.threadSize;
-  const centerBore = req.query.centerBore;
   const price = req.query.price;
   const discount = req.query.discount;
-  const setOf = req.query.setOf;
   const minDiameter = req.query.minDiameter;
   const maxDiameter = req.query.maxDiameter;
-  const minHeight = req.query.minHeight;
-  const maxHeight = req.query.maxHeight;
+  const minWidth = req.query.minWidth;
+  const maxWidth = req.query.maxWidth;
   const minPrice = req.query.minPrice;
   const maxPrice = req.query.maxPrice;
   const minDiscount = req.query.minDiscount;
@@ -160,6 +166,26 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
 
   const query = Wheel.find();
 
+  fields.map((field) => {
+    if (valueRequired(req.query[field])) {
+      const qry = req.query[field];
+      let arrayList = [];
+
+      if (field == "diameter" || field == "setOf") {
+        const result = qry.split(",");
+        result.map((el) => arrayList.push(parseInt(el)));
+      } else {
+        arrayList = qry.split(",");
+      }
+
+      if (arrayList.length > 0) {
+        query.where(field).in(arrayList);
+      } else {
+        query.find({ field: RegexOptions(req.query[field]) });
+      }
+    }
+  });
+
   if (valueRequired(status)) {
     if (status.split(",").length > 1) {
       query.where("status").in(status.split(","));
@@ -168,21 +194,10 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
 
   if (valueRequired(wheelCode))
     query.find({ wheelCode: RegexOptions(wheelCode) });
-  if (valueRequired(name)) query.find({ name: RegexOptions(name) });
-  if (valueRequired(height)) query.find({ height: RegexOptions(height) });
-  if (valueRequired(diameter)) query.find({ diameter: RegexOptions(diameter) });
-  if (valueRequired(boltPattern))
-    query.find({ boltPattern: RegexOptions(boltPattern) });
-  if (valueRequired(inSet)) query.find({ inSet: RegexOptions(inSet) });
-  if (valueRequired(offSet)) query.find({ offSet: RegexOptions(offSet) });
-  if (valueRequired(threadSize))
-    query.find({ threadSize: RegexOptions(threadSize) });
-  if (valueRequired(centerBore))
-    query.find({ centerBore: RegexOptions(centerBore) });
 
+  if (valueRequired(name)) query.find({ name: RegexOptions(name) });
   if (valueRequired(price)) query.find({ price });
   if (valueRequired(discount)) query.find({ discount });
-  if (valueRequired(setOf)) query.find({ setOf });
 
   if (valueRequired(createUser)) {
     const userData = await userSearch(createUser);
@@ -211,17 +226,17 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
       diameter: { $gte: minDiameter },
     });
 
-  if (valueRequired(minHeight) && valueRequired(maxHeight)) {
+  if (valueRequired(minWidth) && valueRequired(maxWidth)) {
     query.find({
-      height: { $gte: minHeight, $lte: maxHeight },
+      width: { $gte: minWidth, $lte: maxWidth },
     });
-  } else if (valueRequired(maxHeight) && valueRequired(minHeight) === false)
+  } else if (valueRequired(maxWidth) && valueRequired(minWidth) === false)
     query.find({
-      height: { $lte: maxHeight },
+      width: { $lte: maxWidth },
     });
-  else if (valueRequired(maxHeight) === false && valueRequired(minHeight))
+  else if (valueRequired(maxWidth) === false && valueRequired(minWidth))
     query.find({
-      height: { $gte: minHeight },
+      width: { $gte: minWidth },
     });
 
   if (valueRequired(minPrice) && valueRequired(maxPrice)) {
@@ -251,7 +266,15 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
     });
 
   if (valueRequired(sort)) {
-    if (typeof sort === "string") {
+    if (sort === "new") {
+      query.sort({ createAt: -1 });
+    } else if (sort === "old") {
+      query.sort({ createAt: 1 });
+    } else if (sort === "cheap") {
+      query.sort({ price: 1 });
+    } else if (sort === "expensive") {
+      query.sort({ price: -1 });
+    } else if (typeof sort === "string") {
       const spliteSort = sort.split(":");
       if (spliteSort.length > 0) {
         let convertSort = {};
@@ -307,7 +330,7 @@ const getFullData = async (req, page) => {
   const status = req.query.status;
   const name = req.query.name;
   const diameter = req.query.diameter;
-  const height = req.query.height;
+  const width = req.query.width;
   const boltPattern = req.query.boltPattern;
   const inSet = req.query.inSet;
   const offSet = req.query.offSet;
@@ -331,7 +354,7 @@ const getFullData = async (req, page) => {
   if (valueRequired(wheelCode))
     query.find({ wheelCode: RegexOptions(wheelCode) });
   if (valueRequired(name)) query.find({ name: RegexOptions(name) });
-  if (valueRequired(height)) query.find({ height: RegexOptions(height) });
+  if (valueRequired(width)) query.find({ width: RegexOptions(width) });
   if (valueRequired(diameter)) query.find({ diameter: RegexOptions(diameter) });
   if (valueRequired(boltPattern))
     query.find({ boltPattern: RegexOptions(boltPattern) });
@@ -414,7 +437,7 @@ exports.excelData = asyncHandler(async (req, res) => {
   const status = req.query.status;
   const name = req.query.name;
   const diameter = req.query.diameter;
-  const height = req.query.height;
+  const width = req.query.width;
   const boltPattern = req.query.boltPattern;
   const inSet = req.query.inSet;
   const offSet = req.query.offSet;
@@ -438,7 +461,7 @@ exports.excelData = asyncHandler(async (req, res) => {
   if (valueRequired(wheelCode))
     query.find({ wheelCode: RegexOptions(wheelCode) });
   if (valueRequired(name)) query.find({ name: RegexOptions(name) });
-  if (valueRequired(height)) query.find({ height: RegexOptions(height) });
+  if (valueRequired(width)) query.find({ width: RegexOptions(width) });
   if (valueRequired(diameter)) query.find({ diameter: RegexOptions(diameter) });
   if (valueRequired(boltPattern))
     query.find({ boltPattern: RegexOptions(boltPattern) });
@@ -514,6 +537,272 @@ exports.excelData = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: datas,
+  });
+});
+
+exports.wheelSearchControl = asyncHandler(async (req, res) => {
+  const userInputs = req.query;
+  const query = {};
+
+  const fields = [
+    "diameter",
+    "width",
+    "boltPattern",
+    "inSet",
+    "offSet",
+    "rim",
+    "threadSize",
+    "centerBore",
+    "minprice",
+    "maxprice",
+    "setOf",
+  ];
+
+  fields.map((field) => {
+    if (
+      valueRequired(userInputs[field]) &&
+      userInputs[field].split(",").length > 0
+    ) {
+      if (field === "minprice" || field === "maxprice") {
+      } else if (field === "diameter" || field === "setOf") {
+      } else {
+        const arrayList = userInputs[field].split(",");
+        query[field] = { $in: arrayList };
+      }
+    }
+  });
+
+  if (
+    valueRequired(userInputs["minprice"]) &&
+    valueRequired(userInputs["maxprice"])
+  ) {
+    query["price"] = {
+      $gte: parseInt(userInputs["minprice"]),
+      $lte: parseInt(userInputs["maxprice"]),
+    };
+  } else if (
+    valueRequired(userInputs["maxprice"]) &&
+    valueRequired(userInputs["minprice"]) === false
+  )
+    query["price"] = { $lte: parseInt(userInputs["maxprice"]) };
+  else if (
+    valueRequired(userInputs["maxprice"]) === false &&
+    valueRequired(userInputs["minprice"])
+  )
+    query["price"] = {
+      $gte: parseInt(userInputs["minprice"]),
+    };
+
+  const diameterQuery = { ...query };
+  delete diameterQuery["diameter"];
+
+  const diameter = await Wheel.aggregate([
+    { $match: diameterQuery },
+    {
+      $group: {
+        _id: { diameter: "$diameter" },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        name: "$_id.diameter",
+        count: "$count",
+      },
+    },
+    { $sort: { name: -1 } },
+  ]);
+
+  const widthQuery = { ...query };
+  delete widthQuery["width"];
+
+  const width = await Wheel.aggregate([
+    { $match: widthQuery },
+    {
+      $group: {
+        _id: { width: "$width" },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        name: "$_id.width",
+        count: "$count",
+      },
+    },
+    { $sort: { name: -1 } },
+  ]);
+
+  const boltPatternQuery = { ...query };
+  delete boltPatternQuery["boltPattern"];
+
+  const boltPattern = await Wheel.aggregate([
+    { $match: boltPatternQuery },
+    {
+      $group: {
+        _id: { boltPattern: "$boltPattern" },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        name: "$_id.boltPattern",
+        count: "$count",
+      },
+    },
+    { $sort: { name: -1 } },
+  ]);
+
+  const inSetQuery = { ...query };
+  delete inSetQuery["inSet"];
+
+  const inSet = await Wheel.aggregate([
+    { $match: inSetQuery },
+    {
+      $group: {
+        _id: { inSet: "$inSet" },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        name: "$_id.inSet",
+        count: "$count",
+      },
+    },
+    { $sort: { name: -1 } },
+  ]);
+
+  const offSetQuery = { ...query };
+  delete offSetQuery["offSet"];
+
+  const offSet = await Wheel.aggregate([
+    { $match: offSetQuery },
+    {
+      $group: {
+        _id: { offSet: "$offSet" },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        name: "$_id.offSet",
+        count: "$count",
+      },
+    },
+    { $sort: { name: -1 } },
+  ]);
+
+  const rimQuery = { ...query };
+  delete rimQuery["rim"];
+
+  const rim = await Wheel.aggregate([
+    { $match: rimQuery },
+    {
+      $group: {
+        _id: { rim: "$rim" },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        name: "$_id.rim",
+        count: "$count",
+      },
+    },
+    { $sort: { name: -1 } },
+  ]);
+
+  const threadSizeQuery = { ...query };
+  delete threadSizeQuery["threadSize"];
+
+  const threadSize = await Wheel.aggregate([
+    { $match: threadSizeQuery },
+    {
+      $group: {
+        _id: { threadSize: "$threadSize" },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        name: "$_id.threadSize",
+        count: "$count",
+      },
+    },
+    { $sort: { name: -1 } },
+  ]);
+
+  const centerBoreQuery = { ...query };
+  delete centerBoreQuery["threadSize"];
+
+  const centerBore = await Wheel.aggregate([
+    { $match: centerBoreQuery },
+    {
+      $group: {
+        _id: { centerBore: "$centerBore" },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        name: "$_id.centerBore",
+        count: "$count",
+      },
+    },
+    { $sort: { name: -1 } },
+  ]);
+
+  const setOfQuery = { ...query };
+  delete setOfQuery["threadSize"];
+
+  const setOf = await Wheel.aggregate([
+    { $match: setOfQuery },
+    {
+      $group: {
+        _id: { setOf: "$setOf" },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        name: "$_id.setOf",
+        count: "$count",
+      },
+    },
+    { $sort: { name: -1 } },
+  ]);
+
+  const price = await Wheel.aggregate([
+    {
+      $facet: {
+        min: [{ $sort: { price: 1 } }, { $limit: 1 }],
+        max: [{ $sort: { price: -1 } }, { $limit: 1 }],
+      },
+    },
+    {
+      $project: {
+        min: { $first: "$min.price" },
+        max: { $first: "$max.price" },
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    success: true,
+    userInputs,
+    data: {
+      diameter,
+      width,
+      boltPattern,
+      inSet,
+      offSet,
+      rim,
+      threadSize,
+      centerBore,
+      price,
+      setOf,
+    },
   });
 });
 

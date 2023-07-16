@@ -12,6 +12,8 @@ const {
   tireGroups,
   tireGroup,
   getSearchDatas,
+  getRandomTires,
+  tireSearchControl,
 } = require("../controller/Tire");
 
 router
@@ -19,6 +21,8 @@ router
   .post(protect, authorize("admin", "operator"), createTire)
   .get(getTires);
 
+router.route("/search").get(tireSearchControl);
+router.route("/random").get(getRandomTires);
 router.route("/mostsearch").get(getSearchDatas);
 router.route("/groups").get(tireGroups);
 router.route("/groups/:group").get(tireGroup);

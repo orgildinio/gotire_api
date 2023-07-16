@@ -13,7 +13,7 @@ exports.createService = asyncHandler(async (req, res) => {
 
   const uniqueName = await Service.find({ name: req.body.name });
   if (uniqueName.length > 0) {
-    req.body.slug = slugify(uniqueName + "_" + uniqueName.length);
+    req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
   }
 
   const service = await Service.create(req.body);
@@ -364,7 +364,7 @@ exports.updateService = asyncHandler(async (req, res) => {
 
   const uniqueName = await Service.find({ name: req.body.name });
   if (uniqueName.length > 0) {
-    req.body.slug = slugify(uniqueName + "_" + uniqueName.length);
+    req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
   }
 
   service = await Service.findByIdAndUpdate(req.params.id, req.body, {

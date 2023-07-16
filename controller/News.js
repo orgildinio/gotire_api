@@ -19,6 +19,8 @@ exports.createNews = asyncHandler(async (req, res, next) => {
   const uniqueName = await News.find({ name: req.body.name });
   if (uniqueName.length > 0) {
     req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
+  } else {
+    req.body.slug = slugify(rq.body.name);
   }
 
   const news = await News.create(req.body);

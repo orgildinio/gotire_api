@@ -40,10 +40,10 @@ const WheelSchema = new mongoose.Schema({
     required: [true, "Диаметрын хэмжээг оруулна уу"],
   },
 
-  height: {
-    type: Number,
+  width: {
+    type: String,
     trim: true,
-    required: [true, "Өндрийг оруулна уу"],
+    required: [true, "Өргөн JJ оруулна уу"],
   },
 
   boltPattern: {
