@@ -31,6 +31,7 @@ exports.createWheel = asyncHandler(async (req, res, next) => {
   req.body.wheelCode =
     "W" + req.body.diameter + "H" + req.body.boltPattern + "-" + orderNumber;
 
+  req.body.code = orderNumber;
   req.body.diameter = parseInt(req.body.diameter);
   req.body.width = parseInt(req.body.width);
   req.body.setOf = parseInt(req.body.setOf);

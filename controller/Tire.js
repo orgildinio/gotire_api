@@ -54,6 +54,8 @@ exports.createTire = asyncHandler(async (req, res, next) => {
     "-" +
     orderNumber;
 
+  req.body.code = orderNumber;
+
   const tire = await Tire.create(req.body);
 
   res.status(200).json({
@@ -985,34 +987,6 @@ exports.getTire = asyncHandler(async (req, res, next) => {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);
   }
 
-  let orderNumber = 1;
-  let modalShort = "";
-
-  const codeNumber = await Tire.findOne({ status: true }).sort({ code: -1 });
-
-  if (valueRequired(codeNumber) && valueRequired(codeNumber.code)) {
-    orderNumber = parseInt(codeNumber.code) + 1;
-  }
-
-  if (valueRequired(tire.modal)) {
-    const result = await TireModal.findById(tire.modal);
-
-    if (result) {
-      modalShort = result.shortName;
-    }
-  }
-  tire.tireCode =
-    "T" +
-    tire.diameter +
-    tire.width +
-    tire.height +
-    "-" +
-    modalShort +
-    "-" +
-    orderNumber;
-  tire.code = orderNumber;
-  tire.save();
-  console.log(orderNumber);
   res.status(200).json({
     success: true,
     data: tire,
