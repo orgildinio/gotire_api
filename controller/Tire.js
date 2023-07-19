@@ -989,7 +989,7 @@ exports.getTire = asyncHandler(async (req, res, next) => {
   let modalShort = "";
 
   const codeNumber = await Tire.findOne({ status: true }).sort({ code: -1 });
-  console.log(codeNumber);
+
   if (valueRequired(codeNumber) && valueRequired(codeNumber.code)) {
     orderNumber = parseInt(codeNumber.code) + 1;
   }
@@ -1010,7 +1010,7 @@ exports.getTire = asyncHandler(async (req, res, next) => {
     modalShort +
     "-" +
     orderNumber;
-
+  tire.code = orderNumber;
   tire.save();
   console.log(orderNumber);
   res.status(200).json({
