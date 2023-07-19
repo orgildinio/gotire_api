@@ -991,7 +991,7 @@ exports.getTire = asyncHandler(async (req, res, next) => {
   const codeNumber = await Tire.findOne({ status: true }).sort({ code: -1 });
 
   if (valueRequired(codeNumber) && valueRequired(codeNumber.code)) {
-    orderNumber += parseInt(codeNumber.code);
+    orderNumber = parseInt(codeNumber.code) + 1;
   }
 
   if (valueRequired(tire.modal)) {
