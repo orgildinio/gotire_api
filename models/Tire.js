@@ -7,6 +7,7 @@ const TireSchema = new mongoose.Schema({
 
   code: {
     type: Number,
+    default: 0,
   },
 
   star: {
