@@ -38,7 +38,12 @@ const uploadRouters = require("./routes/imageUpload");
 const webInfoRouters = require("./routes/WebInfo");
 const fileRouters = require("./routes/File");
 const wheelRouters = require("./routes/Wheel");
-
+const wheelCategoriesRouter = require("./routes/WheelCategories");
+const TireCategoriesRouter = require("./routes/TireCategories");
+const SetProductCategoriesRouter = require("./routes/SetProductCategories");
+const ProductCategoriesRouter = require("./routes/ProductCategories");
+const ProductRouter = require("./routes/Product");
+const SetProductRouter = require("./routes/SetProduct");
 const errorHandler = require("./middleware/error");
 const connectDB = require("./config/db");
 
@@ -137,6 +142,12 @@ app.use("/api/v1/webinfo", webInfoRouters);
 app.use("/api/v1/imgupload", uploadRouters);
 app.use("/api/v1/file", fileRouters);
 app.use("/api/v1/wheels", wheelRouters);
+app.use("/api/v1/wheelcategories", wheelCategoriesRouter);
+app.use("/api/v1/tirecategories", TireCategoriesRouter);
+app.use("/api/v1/setproducts", SetProductRouter);
+app.use("/api/v1/setproductcategories", SetProductCategoriesRouter);
+app.use("/api/v1/productcategories", ProductCategoriesRouter);
+app.use("/api/v1/products", ProductRouter);
 app.use(errorHandler);
 // Алдаа үүсэхэд барьж авч алдааны мэдээллийг клиент тал руу автоматаар мэдээлнэ
 

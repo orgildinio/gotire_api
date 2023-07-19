@@ -5,6 +5,10 @@ const TireSchema = new mongoose.Schema({
     type: String,
   },
 
+  code: {
+    type: Number,
+  },
+
   star: {
     type: Boolean,
     enum: [true, false],
@@ -32,6 +36,13 @@ const TireSchema = new mongoose.Schema({
     trim: true,
     required: [true, "Дугуй үйлдвэрлэгчийн нэрийг оруулна уу"],
   },
+
+  tireCategories: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: "TireCategories",
+    },
+  ],
 
   make: {
     type: mongoose.Schema.ObjectId,
@@ -64,7 +75,6 @@ const TireSchema = new mongoose.Schema({
   year: {
     type: Number,
     trim: true,
-    required: [true, "Дугуй үйлдвэрлэгдсэн огноо оруулна уу"],
   },
 
   use: {
@@ -104,10 +114,6 @@ const TireSchema = new mongoose.Schema({
 
   pictures: {
     type: [String],
-  },
-
-  delivery: {
-    type: String,
   },
 
   views: {

@@ -30,12 +30,11 @@ exports.createTire = asyncHandler(async (req, res, next) => {
 
   let orderNumber = 1;
   let modalShort = "";
-  const lastTireCode = await Tire.findOne({}).sort({ createAt: -1 });
 
-  if (lastTireCode) {
-    const order = lastTireCode.tireCode.split("-");
-    const code = parseInt(order[2]);
-    orderNumber = orderNumber + code;
+  const codeNumber = await Tire.findOne({ status: true }).sort({ code: -1 });
+
+  if (valueRequired(codeNumber) && valueRequired(codeNumber.code)) {
+    orderNumber += parseInt(codeNumber.code);
   }
 
   if (valueRequired(req.body.modal)) {
@@ -130,7 +129,7 @@ exports.getTires = asyncHandler(async (req, res, next) => {
         diameter.push(parseInt(splitDiameter[1]));
       });
     }
-    console.log(width, height, diameter);
+
     query.where("width").in(width);
     query.where("height").in(height);
     query.where("diameter").in(diameter);
@@ -338,6 +337,7 @@ exports.getTires = asyncHandler(async (req, res, next) => {
   query.populate("createUser");
   query.populate("updateUser");
   query.populate("make");
+  query.populate("tireCategories");
 
   const qc = query.toConstructor();
   const clonedQuery = new qc();
@@ -979,7 +979,7 @@ exports.multDeleteTire = asyncHandler(async (req, res, next) => {
 });
 
 exports.getTire = asyncHandler(async (req, res, next) => {
-  const tire = await Tire.findById(req.params.id);
+  const tire = await Tire.findById(req.params.id).populate("tireCategories");
 
   if (!tire) {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);
@@ -1008,6 +1008,10 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
 
   if (valueRequired(req.body.pictures) === false) {
     req.body.pictures = [];
+  }
+
+  if (!valueRequired(req.body.tireCategories)) {
+    req.body.tireCategories = [];
   }
 
   let orderNumber = 1;
@@ -1062,7 +1066,8 @@ exports.getCountTire = asyncHandler(async (req, res, next) => {
 exports.getSlugTire = asyncHandler(async (req, res, next) => {
   const tire = await Tire.findOne({ slug: req.params.slug })
     .populate("createUser")
-    .populate("make");
+    .populate("make")
+    .populate("tireCategories");
 
   if (!tire) {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);

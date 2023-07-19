@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
-const WheelSchema = new mongoose.Schema({
-  wheelCode: {
+const ProductSchema = new mongoose.Schema({
+  productCode: {
     type: String,
     trim: true,
   },
@@ -42,40 +42,6 @@ const WheelSchema = new mongoose.Schema({
     type: String,
     trim: true,
     required: [true, "Обудын гарчиг оруулна уу"],
-  },
-
-  diameter: {
-    type: Number,
-    trim: true,
-    required: [true, "Диаметрын хэмжээг оруулна уу"],
-  },
-
-  width: {
-    type: String,
-    trim: true,
-    required: [true, "Өргөн JJ оруулна уу"],
-  },
-
-  boltPattern: {
-    type: String,
-    trim: true,
-    required: [true, "Болтны хоорондын зайны хэмжээ оруулна уу"],
-  },
-
-  rim: {
-    type: String,
-    trim: true,
-    required: [true, "RIM Хэмжээ оруулна уу"],
-  },
-
-  threadSize: {
-    type: String,
-    trim: true,
-  },
-
-  centerBore: {
-    type: String,
-    trim: true,
   },
 
   price: {
@@ -120,10 +86,10 @@ const WheelSchema = new mongoose.Schema({
     default: Date.now,
   },
 
-  wheelCategories: [
+  productCategories: [
     {
       type: mongoose.Schema.ObjectId,
-      ref: "WheelCategories",
+      ref: "ProductCategories",
     },
   ],
 
@@ -138,4 +104,4 @@ const WheelSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Wheel", WheelSchema);
+module.exports = mongoose.model("Product", ProductSchema);
