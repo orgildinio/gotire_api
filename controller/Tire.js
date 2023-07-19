@@ -1011,6 +1011,8 @@ exports.getTire = asyncHandler(async (req, res, next) => {
     "-" +
     orderNumber;
 
+  tire.save();
+
   res.status(200).json({
     success: true,
     data: tire,
