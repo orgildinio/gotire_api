@@ -27,7 +27,7 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
   if (valueRequired(codeNumber) && valueRequired(codeNumber.code)) {
     orderNumber += parseInt(codeNumber.code);
   }
-
+  req.body.code = orderNumber;
   req.body.productCode = "P" + orderNumber;
   req.body.setOf = parseInt(req.body.setOf);
 
