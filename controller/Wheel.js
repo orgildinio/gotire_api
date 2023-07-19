@@ -832,6 +832,20 @@ exports.getWheel = asyncHandler(async (req, res) => {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);
   }
 
+  let orderNumber = 1;
+
+  const lastWheelCode = await Wheel.findOne({}).sort({ code: -1 });
+
+  if (valueRequired(lastWheelCode) && valueRequired(lastWheelCode.code)) {
+    orderNumber = lastWheelCode.code + 1;
+  }
+
+  wheel.wheelCode =
+    "W" + wheel.diameter + "H" + wheel.boltPattern + "-" + orderNumber;
+
+  wheel.code = orderNumber;
+  wheel.save();
+
   res.status(200).json({
     success: true,
     data: wheel,
@@ -861,19 +875,6 @@ exports.updateWheel = asyncHandler(async (req, res, next) => {
   if (!valueRequired(req.body.wheelCategories)) {
     req.body.wheelCategories = [];
   }
-
-  let orderNumber = 1;
-
-  const lastWheelCode = await Wheel.findOne({}).sort({ createAt: -1 });
-
-  if (lastWheelCode) {
-    const order = lastWheelCode.wheelCode.split("-");
-    const code = parseInt(order[1]);
-    orderNumber = orderNumber + code;
-  }
-
-  req.body.wheelCode =
-    "W" + req.body.diameter + "H" + req.body.boltPattern + "-" + orderNumber;
 
   req.body.updateUser = req.userId;
   req.body.updateAt = Date.now();

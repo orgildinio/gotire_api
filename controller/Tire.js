@@ -1016,33 +1016,6 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
     req.body.tireCategories = [];
   }
 
-  let orderNumber = 1;
-  let modalShort = "";
-  const lastTireCode = await Tire.findOne({}).sort({ createAt: -1 });
-
-  if (lastTireCode) {
-    const order = lastTireCode.tireCode.split("-");
-    const code = parseInt(order[2]);
-    orderNumber = orderNumber + code;
-  }
-
-  if (valueRequired(req.body.modal)) {
-    const result = await TireModal.findById(req.body.modal);
-
-    if (result) {
-      modalShort = result.shortName;
-    }
-  }
-  req.body.tireCode =
-    "T" +
-    req.body.diameter +
-    req.body.width +
-    req.body.height +
-    "-" +
-    modalShort +
-    "-" +
-    orderNumber;
-
   req.body.updateUser = req.userId;
   req.body.updateAt = Date.now();
 
