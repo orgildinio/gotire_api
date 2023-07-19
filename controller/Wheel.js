@@ -832,20 +832,6 @@ exports.getWheel = asyncHandler(async (req, res) => {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);
   }
 
-  let orderNumber = 1;
-
-  const lastWheelCode = await Wheel.findOne({}).sort({ code: -1 });
-
-  if (valueRequired(lastWheelCode) && valueRequired(lastWheelCode.code)) {
-    orderNumber = lastWheelCode.code + 1;
-  }
-
-  wheel.wheelCode =
-    "W" + wheel.diameter + "H" + wheel.boltPattern + "-" + orderNumber;
-
-  wheel.code = orderNumber;
-  wheel.save();
-
   res.status(200).json({
     success: true,
     data: wheel,
