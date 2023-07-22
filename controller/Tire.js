@@ -1048,6 +1048,8 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
     req.body.slug = slugify(name);
   }
 
+  console.log(req.body.slug);
+
   if (valueRequired(req.body.pictures) === false) {
     req.body.pictures = [];
   }
