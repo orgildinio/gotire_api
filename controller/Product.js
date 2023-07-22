@@ -22,7 +22,7 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
 
   let orderNumber = 1;
 
-  const codeNumber = await Product.findOne({ status: true }).sort({ code: -1 });
+  const codeNumber = await Product.findOne({ status: true }).sort({ code: 1 });
 
   if (valueRequired(codeNumber) && valueRequired(codeNumber.code)) {
     orderNumber += parseInt(codeNumber.code);
