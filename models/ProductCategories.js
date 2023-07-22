@@ -1,45 +1,60 @@
 const mongoose = require("mongoose");
 
-const ProductCategoriesSchema = new mongoose.Schema({
-  status: {
-    type: Boolean,
-    enum: [true, false],
-    default: true,
-  },
+const ProductCategoriesSchema = new mongoose.Schema(
+  {
+    status: {
+      type: Boolean,
+      enum: [true, false],
+      default: true,
+    },
 
-  name: {
-    type: String,
-  },
+    name: {
+      type: String,
+    },
 
-  slug: {
-    type: String,
-  },
+    slug: {
+      type: String,
+    },
 
-  parentId: {
-    type: String,
-  },
+    picture: {
+      type: String,
+    },
 
-  position: {
-    type: Number,
-  },
+    parentId: {
+      type: String,
+    },
 
-  createAt: {
-    type: Date,
-    default: Date.now,
-  },
+    position: {
+      type: Number,
+    },
 
-  updateAt: {
-    type: Date,
-    default: Date.now,
+    createAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    updateAt: {
+      type: Date,
+      default: Date.now,
+    },
+    createUser: {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+    },
+    updateUser: {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+    },
   },
-  createUser: {
-    type: mongoose.Schema.ObjectId,
-    ref: "User",
-  },
-  updateUser: {
-    type: mongoose.Schema.ObjectId,
-    ref: "User",
-  },
+  { toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
+
+ProductCategoriesSchema.virtual("catCount", {
+  ref: "Product",
+  localField: "_id",
+  foreignField: "productCategories",
+  justOne: false,
+  count: true,
 });
 
 module.exports = mongoose.model("ProductCategories", ProductCategoriesSchema);

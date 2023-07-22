@@ -53,6 +53,7 @@ function createCategories(categories, parentId = null) {
       name: cate.name,
       slug: cate.slug,
       position: cate.position,
+      count: cate.catCount,
       children: createCategories(categories, cate._id),
     });
   }
@@ -63,6 +64,7 @@ function createCategories(categories, parentId = null) {
 exports.getTireCategories = asyncHandler(async (req, res, next) => {
   TireCategorires.find({})
     .sort({ position: 1 })
+    .populate("catCount")
     .exec((error, categories) => {
       if (error)
         return res.status(400).json({

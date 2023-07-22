@@ -1,4 +1,5 @@
 const Wheel = require("../models/Wheel");
+const WheelCategories = require("../models/WheelCategories");
 const MyError = require("../utils/myError");
 const asyncHandler = require("express-async-handler");
 // const fs = require("fs");
@@ -13,7 +14,7 @@ exports.createWheel = asyncHandler(async (req, res, next) => {
   req.body.status = (valueRequired(req.body.status) && req.body.status) || true;
   req.body.isNew = (valueRequired(req.body.isNew) && req.body.isNew) || false;
 
-  const uniqueName = await Wheel.find({ name: req.body.name });
+  const uniqueName = await Wheel.find({ name: RegexOptions(req.body.name) });
   if (uniqueName.length > 0) {
     req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
   } else {
@@ -148,6 +149,7 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
   ];
 
   // NEWS FIELDS
+  const categories = req.query.categoryname;
   const status = req.query.status;
   const name = req.query.name;
   const price = req.query.price;
@@ -156,8 +158,8 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
   const maxDiameter = req.query.maxDiameter;
   const minWidth = req.query.minWidth;
   const maxWidth = req.query.maxWidth;
-  const minPrice = req.query.minPrice;
-  const maxPrice = req.query.maxPrice;
+  const minPrice = req.query.minprice;
+  const maxPrice = req.query.maxprice;
   const minDiscount = req.query.minDiscount;
   const maxDiscount = req.query.maxDiscount;
   const wheelCode = req.query.wheelCode;
@@ -185,6 +187,18 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
       }
     }
   });
+
+  if (valueRequired(categories)) {
+    const names = categories.split(",");
+    const match = [];
+    names.map((name) => {
+      match.push({ name: RegexOptions(name) });
+    });
+
+    const array = await WheelCategories.find({ $or: match }).select("_id");
+
+    query.where("wheelCategories").in(array.map((el) => el._id));
+  }
 
   if (valueRequired(status)) {
     if (status.split(",").length > 1) {
@@ -559,6 +573,10 @@ exports.wheelSearchControl = asyncHandler(async (req, res) => {
     "setOf",
   ];
 
+  const categories = userInputs["categoryname"];
+
+  query["status"] = true;
+
   fields.map((field) => {
     if (
       valueRequired(userInputs[field]) &&
@@ -593,6 +611,17 @@ exports.wheelSearchControl = asyncHandler(async (req, res) => {
     query["price"] = {
       $gte: parseInt(userInputs["minprice"]),
     };
+
+  if (valueRequired(categories)) {
+    const names = categories.split(",");
+    const match = [];
+    names.map((name) => {
+      match.push({ name: RegexOptions(name) });
+    });
+
+    const array = await WheelCategories.find({ $or: match }).select("_id");
+    query["wheelCategories"] = { $in: array.map((el) => el._id) };
+  }
 
   const diameterQuery = { ...query };
   delete diameterQuery["diameter"];
@@ -846,12 +875,12 @@ exports.updateWheel = asyncHandler(async (req, res, next) => {
   }
 
   const name = req.body.name;
-  const nameUnique = await Wheel.find({}).where("name").equals(name);
 
-  if (nameUnique.length > 1) {
-    req.body.slug = slugify(req.body.name + "_" + nameUnique.length + 1);
+  const uniqueName = await Wheel.find({ name: RegexOptions(req.body.name) });
+  if (uniqueName.length > 0) {
+    req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
   } else {
-    req.body.slug = slugify(name);
+    req.body.slug = slugify(req.body.name);
   }
 
   if (valueRequired(req.body.pictures) === false) {

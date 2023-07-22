@@ -11,8 +11,10 @@ const {
   useTireMake,
   useTireModal,
   RegexOptions,
+  useTireCategory,
 } = require("../lib/searchOfterModel");
 const TireModal = require("../models/TireModal");
+const TireCategories = require("../models/TireCategories");
 
 exports.createTire = asyncHandler(async (req, res, next) => {
   req.body.createUser = req.userId;
@@ -21,7 +23,7 @@ exports.createTire = asyncHandler(async (req, res, next) => {
   req.body.height = parseInt(req.body.height);
   req.body.diameter = parseInt(req.body.diameter);
 
-  const uniqueName = await Tire.find({ name: req.body.name });
+  const uniqueName = await Tire.find({ name: RegexOptions(req.body.name) });
   if (uniqueName.length > 0) {
     req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
   } else {
@@ -108,13 +110,37 @@ exports.getTires = asyncHandler(async (req, res, next) => {
   const tiresize = req.query.tiresize;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
+  const categoryName = req.query.categoryname;
 
   const query = Tire.find();
+
+  if (valueRequired(categoryName)) {
+    const names = categoryName.split(",");
+    const match = [];
+    names.map((name) => {
+      match.push({ name: RegexOptions(name) });
+    });
+
+    const array = await TireCategories.find({ $or: match }).select("_id");
+    query.where("tireCategories").in(array.map((el) => el._id));
+  }
 
   if (valueRequired(status)) {
     if (status.split(",").length > 1) {
       query.where("status").in(status.split(","));
     } else query.where("status").equals(status);
+  }
+
+  if (valueRequired(use)) {
+    if (use.split(",").length > 1) {
+      query.where("use").in(use.split(",").map((el) => parseInt(el)));
+    }
+  }
+
+  if (valueRequired(setOf)) {
+    if (setOf.split(",").length > 1) {
+      query.where("setOf").in(setOf.split(",").map((el) => parseInt(el)));
+    }
   }
 
   if (valueRequired(tiresize)) {
@@ -168,7 +194,7 @@ exports.getTires = asyncHandler(async (req, res, next) => {
   if (valueRequired(height)) query.find({ height: RegexOptions(height) });
   if (valueRequired(diameter)) query.find({ diameter: RegexOptions(diameter) });
   if (valueRequired(year)) query.find({ year });
-  if (valueRequired(use)) query.find({ use });
+
   if (valueRequired(season)) {
     let arraySeason = season.split(",");
     if (arraySeason.length > 0) {
@@ -179,7 +205,6 @@ exports.getTires = asyncHandler(async (req, res, next) => {
   }
   if (valueRequired(price)) query.find({ price });
   if (valueRequired(discount)) query.find({ discount });
-  if (valueRequired(setOf)) query.find({ setOf });
 
   if (valueRequired(minWidth) && valueRequired(maxWidth)) {
     query.find({
@@ -396,6 +421,8 @@ exports.tireSearchControl = asyncHandler(async (req, res) => {
     "maxprice",
   ];
 
+  const categories = userInputs["categoryname"];
+
   fields.map((field) => {
     if (
       valueRequired(userInputs[field]) &&
@@ -421,6 +448,7 @@ exports.tireSearchControl = asyncHandler(async (req, res) => {
         query["diameter"] = { $in: diameter };
       } else if (field === "use" || field === "setof") {
         const arrayList = userInputs[field].split(",");
+
         if (field === "setof") field = "setOf";
         query[field] = { $in: arrayList.map((el) => parseInt(el)) };
       } else if (field === "make") {
@@ -431,6 +459,17 @@ exports.tireSearchControl = asyncHandler(async (req, res) => {
       }
     }
   });
+  query["status"] = true;
+  if (valueRequired(categories)) {
+    const names = categories.split(",");
+    const match = [];
+    names.map((name) => {
+      match.push({ name: RegexOptions(name) });
+    });
+
+    const array = await TireCategories.find({ $or: match }).select("_id");
+    query["tireCategories"] = { $in: array.map((el) => el._id) };
+  }
 
   if (valueRequired(userInputs["make"])) {
     const arrayList = await useTireMake(userInputs["make"]);
@@ -1001,8 +1040,8 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
   }
 
   const name = req.body.name;
-  const uniqueName = await Tire.find({ name: req.body.name });
-  if (uniqueName.length > 1) {
+  const uniqueName = await Tire.find({ name: RegexOptions(req.body.name) });
+  if (uniqueName.length > 0) {
     req.body.slug = slugify(name + "_" + uniqueName.length + 1);
   } else {
     req.body.slug = slugify(name);
