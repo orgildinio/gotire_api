@@ -1041,6 +1041,7 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
 
   const name = req.body.name;
   const uniqueName = await Tire.find({ name: RegexOptions(req.body.name) });
+  console.log(uniqueName);
   if (uniqueName.length > 0) {
     req.body.slug = slugify(name + "_" + uniqueName.length + 1);
   } else {
