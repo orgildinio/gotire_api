@@ -1039,8 +1039,10 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);
   }
 
-  console.log(req.body.name);
-  const uniqueName = await Tire.find({ name: RegexOptions(req.body.name) });
+  console.log(req.body.name.trim());
+  const uniqueName = await Tire.find({
+    name: RegexOptions(req.body.name.trim()),
+  });
   console.log(uniqueName);
   if (uniqueName.length > 0) {
     req.body.slug = slugify(req.body.name + "_" + uniqueName.length + 1);
