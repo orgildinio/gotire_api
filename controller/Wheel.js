@@ -17,7 +17,7 @@ exports.createWheel = asyncHandler(async (req, res, next) => {
   const uniqueName = await Wheel.find({ name: RegexOptions(req.body.name) });
   console.log(uniqueName);
   if (uniqueName.length > 0) {
-    req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
+    req.body.slug = slugify(req.body.name + "_" + uniqueName.length + 1);
   } else {
     req.body.slug = slugify(req.body.name);
   }
@@ -877,9 +877,9 @@ exports.updateWheel = asyncHandler(async (req, res, next) => {
 
   const name = req.body.name;
 
-  const uniqueName = await Wheel.find({ name: RegexOptions(req.body.name) });
+  const uniqueName = await Wheel.find({ name: RegexOptions(name) });
   if (uniqueName.length > 0) {
-    req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
+    req.body.slug = slugify(req.body.name + "_" + uniqueName.length + 1);
   } else {
     req.body.slug = slugify(req.body.name);
   }
