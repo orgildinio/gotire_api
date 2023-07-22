@@ -15,12 +15,13 @@ exports.createWheel = asyncHandler(async (req, res, next) => {
   req.body.isNew = (valueRequired(req.body.isNew) && req.body.isNew) || false;
 
   const uniqueName = await Wheel.find({ name: RegexOptions(req.body.name) });
+  console.log(uniqueName);
   if (uniqueName.length > 0) {
     req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
   } else {
     req.body.slug = slugify(req.body.name);
   }
-
+  console.log(req.body.slug);
   let orderNumber = 1;
 
   const codeNumber = await Wheel.findOne({ status: true }).sort({ code: -1 });
