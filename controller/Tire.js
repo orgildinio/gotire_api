@@ -25,7 +25,7 @@ exports.createTire = asyncHandler(async (req, res, next) => {
 
   const uniqueName = await Tire.find({ name: RegexOptions(req.body.name) });
   if (uniqueName.length > 0) {
-    req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
+    req.body.slug = slugify(req.body.name + "_" + uniqueName.length + 1);
   } else {
     req.body.slug = slugify(req.body.name);
   }
@@ -1039,16 +1039,13 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);
   }
 
-  const name = req.body.name;
   const uniqueName = await Tire.find({ name: RegexOptions(req.body.name) });
-  console.log(uniqueName);
-  if (uniqueName.length > 0) {
-    req.body.slug = slugify(name + "_" + uniqueName.length + 1);
-  } else {
-    req.body.slug = slugify(name);
-  }
 
-  console.log(req.body.slug);
+  if (uniqueName.length > 0) {
+    req.body.slug = slugify(req.body.name + "_" + uniqueName.length + 1);
+  } else {
+    req.body.slug = slugify(req.body.name);
+  }
 
   if (valueRequired(req.body.pictures) === false) {
     req.body.pictures = [];
