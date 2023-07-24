@@ -50,6 +50,7 @@ SetProductCategoriesSchema.virtual("catCount", {
   localField: "_id",
   foreignField: "setProductCategories",
   justOne: false,
+  match: { status: true },
   count: true,
 });
 

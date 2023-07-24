@@ -49,6 +49,7 @@ TireCategoriesSchema.virtual("catCount", {
   ref: "Tire",
   localField: "_id",
   foreignField: "tireCategories",
+  match: { status: true },
   justOne: false,
   count: true,
 });

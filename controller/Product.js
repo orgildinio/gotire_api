@@ -2,6 +2,7 @@ const Product = require("../models/Product");
 const MyError = require("../utils/myError");
 const asyncHandler = require("express-async-handler");
 // const fs = require("fs");
+const ProductCategories = require("../models/ProductCategories");
 const paginate = require("../utils/paginate");
 const { imageDelete } = require("../lib/photoUpload");
 const { valueRequired } = require("../lib/check");
@@ -133,24 +134,41 @@ exports.getProducts = asyncHandler(async (req, res, next) => {
   //  FIELDS
   const status = req.query.status;
   const name = req.query.name;
+  const productCategories = req.query.categoryname;
   const price = req.query.price;
   const discount = req.query.discount;
-  const minPrice = req.query.minPrice;
-  const maxPrice = req.query.maxPrice;
+  const minPrice = req.query.minprice;
+  const maxPrice = req.query.maxprice;
   const productCode = req.query.productCode;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
 
+  const arrayBooleanFields = ["star", "isDiscount", "status"];
+
   const query = Product.find();
 
-  if (valueRequired(status)) {
-    if (status.split(",").length > 1) {
-      query.where("status").in(status.split(","));
-    } else query.where("status").equals(status);
-  }
+  arrayBooleanFields.map((el) => {
+    if (valueRequired(req.query[el])) {
+      const data = req.query[el];
+      if (data.split(",").length > 1) {
+        query.where(el).in(data.split(","));
+      } else query.where(el).equals(data);
+    }
+  });
 
   if (valueRequired(productCode))
     query.find({ productCode: RegexOptions(productCode) });
+
+  if (valueRequired(productCategories)) {
+    const names = productCategories.split(",");
+    const match = [];
+    names.map((name) => {
+      match.push({ name: RegexOptions(name) });
+    });
+
+    const array = await ProductCategories.find({ $or: match }).select("_id");
+    query.where("productCategories").in(array.map((el) => el._id));
+  }
 
   if (valueRequired(name)) query.find({ name: RegexOptions(name) });
   if (valueRequired(price)) query.find({ price });
@@ -242,31 +260,48 @@ exports.getProducts = asyncHandler(async (req, res, next) => {
 });
 
 const getFullData = async (req, page) => {
-  const limit = 25;
+  let sort = req.query.sort || { createAt: -1 };
   const select = req.query.select;
 
   //  FIELDS
-  //  FIELDS
   const status = req.query.status;
   const name = req.query.name;
+  const productCategories = req.query.categoryname;
   const price = req.query.price;
   const discount = req.query.discount;
-  const minPrice = req.query.minPrice;
-  const maxPrice = req.query.maxPrice;
+  const minPrice = req.query.minprice;
+  const maxPrice = req.query.maxprice;
   const productCode = req.query.productCode;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
 
+  const arrayBooleanFields = ["star", "isDiscount", "status"];
+
   const query = Product.find();
 
-  if (valueRequired(status)) {
-    if (status.split(",").length > 1) {
-      query.where("status").in(status.split(","));
-    } else query.where("status").equals(status);
-  }
+  arrayBooleanFields.map((el) => {
+    if (valueRequired(req.query[el])) {
+      const data = req.query[el];
+      if (data.split(",").length > 1) {
+        query.where(el).in(data.split(","));
+      } else query.where(el).equals(data);
+    }
+  });
 
   if (valueRequired(productCode))
     query.find({ productCode: RegexOptions(productCode) });
+
+  if (valueRequired(productCategories)) {
+    const names = productCategories.split(",");
+    const match = [];
+    names.map((name) => {
+      1;
+      match.push({ name: RegexOptions(name) });
+    });
+
+    const array = await ProductCategories.find({ $or: match }).select("_id");
+    query.where("productCategories").in(array.map((el) => el._id));
+  }
 
   if (valueRequired(name)) query.find({ name: RegexOptions(name) });
   if (valueRequired(price)) query.find({ price });
@@ -359,27 +394,44 @@ exports.excelData = asyncHandler(async (req, res) => {
   const select = req.query.select;
 
   //  FIELDS
-  //  FIELDS
   const status = req.query.status;
   const name = req.query.name;
+  const productCategories = req.query.categoryname;
   const price = req.query.price;
   const discount = req.query.discount;
-  const minPrice = req.query.minPrice;
-  const maxPrice = req.query.maxPrice;
+  const minPrice = req.query.minprice;
+  const maxPrice = req.query.maxprice;
   const productCode = req.query.productCode;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
 
+  const arrayBooleanFields = ["star", "isDiscount", "status"];
+
   const query = Product.find();
 
-  if (valueRequired(status)) {
-    if (status.split(",").length > 1) {
-      query.where("status").in(status.split(","));
-    } else query.where("status").equals(status);
-  }
+  arrayBooleanFields.map((el) => {
+    if (valueRequired(req.query[el])) {
+      const data = req.query[el];
+      if (data.split(",").length > 1) {
+        query.where(el).in(data.split(","));
+      } else query.where(el).equals(data);
+    }
+  });
 
   if (valueRequired(productCode))
     query.find({ productCode: RegexOptions(productCode) });
+
+  if (valueRequired(productCategories)) {
+    const names = productCategories.split(",");
+    const match = [];
+    names.map((name) => {
+      1;
+      match.push({ name: RegexOptions(name) });
+    });
+
+    const array = await ProductCategories.find({ $or: match }).select("_id");
+    query.where("productCategories").in(array.map((el) => el._id));
+  }
 
   if (valueRequired(name)) query.find({ name: RegexOptions(name) });
   if (valueRequired(price)) query.find({ price });
@@ -474,34 +526,21 @@ exports.excelData = asyncHandler(async (req, res) => {
 exports.productSearchControl = asyncHandler(async (req, res) => {
   const userInputs = req.query;
   const query = {};
+  query["status"] = true;
 
-  const fields = [
-    "diameter",
-    "width",
-    "boltPattern",
-    "inSet",
-    "offSet",
-    "rim",
-    "threadSize",
-    "centerBore",
-    "minprice",
-    "maxprice",
-    "setOf",
-  ];
+  const productCategories = userInputs("categoryname");
 
-  fields.map((field) => {
-    if (
-      valueRequired(userInputs[field]) &&
-      userInputs[field].split(",").length > 0
-    ) {
-      if (field === "minprice" || field === "maxprice") {
-      } else if (field === "diameter" || field === "setOf") {
-      } else {
-        const arrayList = userInputs[field].split(",");
-        query[field] = { $in: arrayList };
-      }
-    }
-  });
+  if (valueRequired(productCategories)) {
+    const names = productCategories.split(",");
+    const match = [];
+    names.map((name) => {
+      1;
+      match.push({ name: RegexOptions(name) });
+    });
+
+    const array = await ProductCategories.find({ $or: match }).select("_id");
+    query["productCategories"] = { $in: array.map((el) => el._id) };
+  }
 
   if (
     valueRequired(userInputs["minprice"]) &&
@@ -524,186 +563,6 @@ exports.productSearchControl = asyncHandler(async (req, res) => {
       $gte: parseInt(userInputs["minprice"]),
     };
 
-  const diameterQuery = { ...query };
-  delete diameterQuery["diameter"];
-
-  const diameter = await Product.aggregate([
-    { $match: diameterQuery },
-    {
-      $group: {
-        _id: { diameter: "$diameter" },
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        name: "$_id.diameter",
-        count: "$count",
-      },
-    },
-    { $sort: { name: -1 } },
-  ]);
-
-  const widthQuery = { ...query };
-  delete widthQuery["width"];
-
-  const width = await Product.aggregate([
-    { $match: widthQuery },
-    {
-      $group: {
-        _id: { width: "$width" },
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        name: "$_id.width",
-        count: "$count",
-      },
-    },
-    { $sort: { name: -1 } },
-  ]);
-
-  const boltPatternQuery = { ...query };
-  delete boltPatternQuery["boltPattern"];
-
-  const boltPattern = await Product.aggregate([
-    { $match: boltPatternQuery },
-    {
-      $group: {
-        _id: { boltPattern: "$boltPattern" },
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        name: "$_id.boltPattern",
-        count: "$count",
-      },
-    },
-    { $sort: { name: -1 } },
-  ]);
-
-  const inSetQuery = { ...query };
-  delete inSetQuery["inSet"];
-
-  const inSet = await Product.aggregate([
-    { $match: inSetQuery },
-    {
-      $group: {
-        _id: { inSet: "$inSet" },
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        name: "$_id.inSet",
-        count: "$count",
-      },
-    },
-    { $sort: { name: -1 } },
-  ]);
-
-  const offSetQuery = { ...query };
-  delete offSetQuery["offSet"];
-
-  const offSet = await Product.aggregate([
-    { $match: offSetQuery },
-    {
-      $group: {
-        _id: { offSet: "$offSet" },
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        name: "$_id.offSet",
-        count: "$count",
-      },
-    },
-    { $sort: { name: -1 } },
-  ]);
-
-  const rimQuery = { ...query };
-  delete rimQuery["rim"];
-
-  const rim = await Product.aggregate([
-    { $match: rimQuery },
-    {
-      $group: {
-        _id: { rim: "$rim" },
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        name: "$_id.rim",
-        count: "$count",
-      },
-    },
-    { $sort: { name: -1 } },
-  ]);
-
-  const threadSizeQuery = { ...query };
-  delete threadSizeQuery["threadSize"];
-
-  const threadSize = await Product.aggregate([
-    { $match: threadSizeQuery },
-    {
-      $group: {
-        _id: { threadSize: "$threadSize" },
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        name: "$_id.threadSize",
-        count: "$count",
-      },
-    },
-    { $sort: { name: -1 } },
-  ]);
-
-  const centerBoreQuery = { ...query };
-  delete centerBoreQuery["threadSize"];
-
-  const centerBore = await Product.aggregate([
-    { $match: centerBoreQuery },
-    {
-      $group: {
-        _id: { centerBore: "$centerBore" },
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        name: "$_id.centerBore",
-        count: "$count",
-      },
-    },
-    { $sort: { name: -1 } },
-  ]);
-
-  const setOfQuery = { ...query };
-  delete setOfQuery["threadSize"];
-
-  const setOf = await Product.aggregate([
-    { $match: setOfQuery },
-    {
-      $group: {
-        _id: { setOf: "$setOf" },
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        name: "$_id.setOf",
-        count: "$count",
-      },
-    },
-    { $sort: { name: -1 } },
-  ]);
-
   const price = await Product.aggregate([
     {
       $facet: {
@@ -723,16 +582,7 @@ exports.productSearchControl = asyncHandler(async (req, res) => {
     success: true,
     userInputs,
     data: {
-      diameter,
-      width,
-      boltPattern,
-      inSet,
-      offSet,
-      rim,
-      threadSize,
-      centerBore,
       price,
-      setOf,
     },
   });
 });

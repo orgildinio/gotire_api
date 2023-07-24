@@ -49,6 +49,7 @@ WheelCategoriesSchema.virtual("catCount", {
   ref: "Wheel",
   localField: "_id",
   foreignField: "wheelCategories",
+  match: { status: true },
   justOne: false,
   count: true,
 });

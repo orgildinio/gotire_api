@@ -110,15 +110,15 @@ exports.getTires = asyncHandler(async (req, res, next) => {
   const tiresize = req.query.tiresize;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
-  const categoryName = req.query.categoryname;
+  const categories = req.query.categoryname;
 
   const query = Tire.find();
 
-  if (valueRequired(categoryName)) {
-    const names = categoryName.split(",");
+  if (valueRequired(categories)) {
+    const names = categories.split(",");
     const match = [];
-    names.map((name) => {
-      match.push({ name: RegexOptions(name) });
+    names.map((cat) => {
+      match.push({ name: RegexOptions(cat) });
     });
 
     const array = await TireCategories.find({ $or: match }).select("_id");
@@ -1039,11 +1039,10 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
     throw new MyError("Тухайн мэдээ олдсонгүй. ", 404);
   }
 
-  console.log(req.body.name.trim());
   const uniqueName = await Tire.find({
     name: RegexOptions(req.body.name.trim()),
   });
-  console.log(uniqueName);
+
   if (uniqueName.length > 0) {
     req.body.slug = slugify(req.body.name + "_" + uniqueName.length + 1);
   } else {

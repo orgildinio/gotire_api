@@ -9,12 +9,6 @@ const SetProductSchema = new mongoose.Schema({
     type: Number,
   },
 
-  isNew: {
-    type: Boolean,
-    enum: [true, false],
-    default: false,
-  },
-
   star: {
     type: Boolean,
     enum: [true, false],

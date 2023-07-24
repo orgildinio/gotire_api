@@ -11,7 +11,9 @@ const {
   useTireMake,
   useTireModal,
   useProductCategories,
+  RegexOptions,
 } = require("../lib/searchOfterModel");
+const SetProductCategories = require("../models/SetProductCategories");
 
 exports.createSetProduct = asyncHandler(async (req, res, next) => {
   req.body.createUser = req.userId;
@@ -95,31 +97,25 @@ exports.getSetProducts = asyncHandler(async (req, res, next) => {
 
   //  FIELDS
   const tiresize = req.query.tiresize;
-  const setProductCategories = req.query.setProductCategories;
+  const setProductCategories = req.query.categoryname;
   const make = req.query.make;
   const modal = req.query.modal;
+  const price = req.query.price;
   const minPrice = req.query.minprice;
   const maxPrice = req.query.maxprice;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
-  const arrayBooleanFields = ["star", "isDiscount", "status", "isNew"];
-  const arrayStringFields = [
-    "name",
-    "tire",
-    "setofCode",
-    "tire-season",
-    "wheel-boltPattern",
-    "wheel-rim",
-    "wheel-threadSize",
-    "wheel-centerBore",
-  ];
-  const arrayInitFields = [
-    "tire-use",
-    "setOf",
-    "wheel-diameter",
-    "wheel-width",
-    "price",
-    "discount",
+  const arrayBooleanFields = ["star", "isDiscount", "status"];
+  const arrayFields = ["setOf", "setofCode", "name"];
+
+  const arrayTireFields = ["use", "season"];
+  const arrayWheelFields = [
+    "diameter",
+    "width",
+    "boltPattern",
+    "rim",
+    "threadSize",
+    "centerBore",
   ];
 
   const query = SetProduct.find();
@@ -133,32 +129,37 @@ exports.getSetProducts = asyncHandler(async (req, res, next) => {
     }
   });
 
-  arrayStringFields.map((field) => {
+  arrayFields.map((field) => {
     if (valueRequired(req.query[field])) {
-      let arrayField = req.query[field].split(",");
-      const data = arrayField;
-
-      const splitField = req.query[field].split("-");
-      if (splitField.length >= 2) {
-        const fld = splitField[0] + "." + splitField[1];
-        query.where(fld).in(data);
-      } else {
-        query.where(field).in(data);
-      }
+      const arrayList = req.query[field].split(",");
+      if (field == "setOf") {
+        query.where(field).in(arrayList.map((el) => parseInt(el)));
+      } else query.where(field).in(arrayList.map((el) => el));
     }
   });
 
-  arrayInitFields.map((field) => {
-    if (valueRequired(req.query[field])) {
-      let arrayField = req.query[field].split(",");
-      const data = arrayField.map((el) => parseInt(el));
+  if (valueRequired(price)) {
+    query.where("price").equals(price);
+  }
 
-      const splitField = req.query[field].split("-");
-      if (splitField.length >= 2) {
-        const fld = splitField[0] + "." + splitField[1];
-        query.where(fld).in(data);
+  arrayTireFields.map((field) => {
+    if (valueRequired(req.query[field])) {
+      const fieldName = "tire." + field;
+      const arrayList = req.query[field].split(",");
+      if (field === "use") {
+        query.where(fieldName).in(arrayList.map((el) => parseInt(el)));
+      } else query.where(fieldName).in(arrayList.map((el) => el));
+    }
+  });
+
+  arrayWheelFields.map((field) => {
+    if (valueRequired(req.query[field])) {
+      const fieldName = "wheel." + field;
+      const arrayList = req.query[field].split(",");
+      if (field === "diameter") {
+        query.where(fieldName).in(arrayList.map((el) => parseInt(el)));
       } else {
-        query.where(field).in(data);
+        query.where(fieldName).in(arrayList.map((el) => el));
       }
     }
   });
@@ -184,27 +185,24 @@ exports.getSetProducts = asyncHandler(async (req, res, next) => {
   }
 
   if (valueRequired(setProductCategories)) {
-    const categoriesId = await useProductCategories(setProductCategories);
-    query.where("setProductCategories").in(categoriesId);
+    const names = setProductCategories.split(",");
+    const match = [];
+    names.map((name) => {
+      1;
+      match.push({ name: RegexOptions(name) });
+    });
+
+    const array = await SetProductCategories.find({ $or: match }).select("_id");
+    query.where("setProductCategories").in(array.map((el) => el._id));
   }
+
   if (valueRequired(make)) {
     let arrayMake = make.split(",");
     if (arrayMake.length > 0) {
       await arrayMake.map(async (el) => {
         const makeIds = await useTireMake(el);
-        query.where("make").in(makeIds);
+        query.where("tire.make").in(makeIds);
       });
-    }
-  }
-  if (valueRequired(modal)) {
-    let arrayModal = modal.split(",");
-    if (arrayModal.length > 0) {
-      query.where("modal").in(arrayModal);
-    } else {
-      const modalIds = await useTireModal(modal);
-      if (modalIds.length > 0) {
-        query.where("modal").in(modalIds);
-      }
     }
   }
 
@@ -322,35 +320,28 @@ exports.getRandomSetProducts = asyncHandler(async (req, res) => {
 exports.setProductSearchControl = asyncHandler(async (req, res) => {
   const userInputs = req.query;
   const query = {};
-  const tiresize = req.query.tiresize;
-  const setProductCategories = req.query.setProductCategories;
-  const arrayBooleanFields = ["star", "isDiscount", "status", "isNew"];
-  const arrayStringFields = [
-    "name",
-    "tire",
-    "setofCode",
-    "tire-season",
-    "wheel-boltPattern",
-    "wheel-rim",
-    "wheel-threadSize",
-    "wheel-centerBore",
-  ];
-  const arrayInitFields = [
-    "tire-use",
-    "setOf",
-    "wheel-diameter",
-    "wheel-width",
-    "price",
-    "discount",
+
+  const tiresize = userInputs.tiresize;
+  const setProductCategories = userInputs.categoryname;
+  const arrayTireList = ["use", "season"];
+  const arrayWheelList = [
+    "diameter",
+    "width",
+    "boltPattern",
+    "rim",
+    "threadSize",
+    "centerBore",
   ];
 
+  query["status"] = true;
+
   if (valueRequired(tiresize)) {
-    const setofsizeArray = userInputs["tiresize"].split(",");
+    const tiresizeArray = userInputs["tiresize"].split(",");
     let width = [];
     let height = [];
     let diameter = [];
-    if (setofsizeArray.length > 0) {
-      setofsizeArray.map((size) => {
+    if (tiresizeArray.length > 0) {
+      tiresizeArray.map((size) => {
         const splitSlash = size.split("/");
         const splitDiameter = splitSlash[1].split("R");
         width.push(parseInt(splitSlash[0]));
@@ -364,44 +355,48 @@ exports.setProductSearchControl = asyncHandler(async (req, res) => {
     query["tire.diameter"] = { $in: diameter };
   }
 
-  arrayStringFields.map((field) => {
-    if (valueRequired(req.query[field])) {
-      let arrayField = req.query[field].split(",");
-      const data = arrayField;
-
-      const splitField = req.query[field].split("-");
-      if (splitField.length >= 2) {
-        const fld = splitField[0] + "." + splitField[1];
-        query[fld] = { $in: data };
-      } else {
-        query[field] = { $in: data };
-      }
-    }
-  });
-
-  arrayInitFields.map((field) => {
-    if (valueRequired(req.query[field])) {
-      let arrayField = req.query[field].split(",");
-      const data = arrayField.map((el) => parseInt(el));
-
-      const splitField = req.query[field].split("-");
-      if (splitField.length >= 2) {
-        const fld = splitField[0] + "." + splitField[1];
-        query[fld] = { $in: data };
-      } else {
-        query[field] = { $in: data };
-      }
-    }
-  });
-
-  if (valueRequired(setProductCategories)) {
-    const categoriesId = await useProductCategories(setProductCategories);
-    query["setProductCategories"] = { $in: categoriesId };
-  }
-
   if (valueRequired(userInputs["make"])) {
     const arrayList = await useTireMake(userInputs["make"]);
     query["tire.make"] = arrayList[0]._id;
+  }
+
+  if (valueRequired(setProductCategories)) {
+    const names = setProductCategories.split(",");
+    const match = [];
+    names.map((name) => {
+      1;
+      match.push({ name: RegexOptions(name) });
+    });
+
+    const array = await SetProductCategories.find({ $or: match }).select("_id");
+    query["setProductCategories"] = { $in: array.map((el) => el._id) };
+  }
+
+  arrayTireList.map((field) => {
+    if (valueRequired(userInputs[field])) {
+      const fieldName = "tire." + field;
+      const arrayList = userInputs[field].split(",");
+      if (field === "use") {
+        query[fieldName] = { $in: arrayList.map((el) => parseInt(el)) };
+      } else query[fieldName] = { $in: arrayList.map((el) => el) };
+    }
+  });
+
+  arrayWheelList.map((field) => {
+    if (userInputs[field]) {
+      const arrayList = userInputs[field].split(",");
+      const fieldName = "wheel." + field;
+      if (field === "diameter") {
+        query[fieldName] = { $in: arrayList.map((el) => parseInt(el)) };
+      } else {
+        query[fieldName] = { $in: arrayList.map((el) => el) };
+      }
+    }
+  });
+
+  if (valueRequired(userInputs["setOf"])) {
+    const arrayList = userInputs["setOf"].split(",");
+    query["setOf"] = { $in: arrayList.map((el) => parseInt(el)) };
   }
 
   if (

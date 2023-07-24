@@ -62,6 +62,8 @@ function createCategories(categories, parentId = null) {
 }
 
 exports.getTireCategories = asyncHandler(async (req, res, next) => {
+  const status = req.query.status;
+
   TireCategorires.find({})
     .sort({ position: 1 })
     .populate("catCount")
