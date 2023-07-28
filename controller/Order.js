@@ -10,6 +10,7 @@ const Wheel = require("../models/Wheel");
 const Invoice = require("../models/Invoice");
 const Product = require("../models/Product");
 const SetProduct = require("../models/SetProduct");
+const moment = require("moment");
 
 exports.cartCheck = asyncHandler(async (req, res) => {
   const carts = req.body.carts;
@@ -224,8 +225,11 @@ exports.updateUserOrder = asyncHandler(async (req, res) => {
 exports.getTodayCount = asyncHandler(async (req, res) => {
   const start = new Date().toDateString();
 
+  const today = moment().startOf("day");
+  const current = new Date().toJSON().slice(0, 10);
+  console.log(current);
   const count = await Order.find({
-    createdAt: { $gte: start },
+    $where: `this.createAt.toJSON().slice(0, 10) === "${current}"`,
   }).count();
 
   res.status(200).json({
@@ -299,6 +303,7 @@ exports.getOrders = asyncHandler(async (req, res) => {
   const arrayBooleanFields = ["status", "paid", "increase", "delivery"];
   const arrayIntFields = ["total", "phoneNumber"];
   const arrayStringFields = ["firstName", "lastName", "email", "address"];
+  const orderNumber = req.query.orderNumber;
   const paidType = req.query.paidType;
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
@@ -356,6 +361,8 @@ exports.getOrders = asyncHandler(async (req, res) => {
         convertSort = { [spliteSort[0]]: -1 };
       }
       if (spliteSort[0] != "undefined") query.sort(convertSort);
+    } else {
+      query.sort(sort);
     }
   }
 
