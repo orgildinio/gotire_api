@@ -8,39 +8,169 @@ const { RegexOptions, userSearch } = require("../lib/searchOfterModel");
 const Tire = require("../models/Tire");
 const Wheel = require("../models/Wheel");
 const Invoice = require("../models/Invoice");
+const Product = require("../models/Product");
+const SetProduct = require("../models/SetProduct");
+
+exports.cartCheck = asyncHandler(async (req, res) => {
+  const carts = req.body.carts;
+
+  const tire = carts.filter((cart) => cart.type === "tire");
+  const wheel = carts.filter((cart) => cart.type === "wheel");
+  const product = carts.filter((cart) => cart.type === "product");
+  const setProduct = carts.filter((cart) => cart.type === "setProduct");
+  let total = 0;
+
+  const tireIds = tire.map((el) => {
+    if (el.isDiscount === false) {
+      total += parseInt(el.price);
+    } else if (el.isDiscount === true) {
+      total += parseInt(el.discount);
+    }
+
+    return el.productInfo;
+  });
+
+  const wheelIds = wheel.map((el) => {
+    if (el.isDiscount === false) {
+      total += parseInt(el.price);
+    } else if (el.isDiscount === true) {
+      total += parseInt(el.discount);
+    }
+    return el.productInfo;
+  });
+
+  const productIds = product.map((el) => {
+    if (el.isDiscount === false) {
+      total += parseInt(el.qty) * parseInt(el.price);
+    } else if (el.isDiscount === true) {
+      total += parseInt(el.qty) * parseInt(el.discount);
+    }
+    return el.productInfo;
+  });
+
+  const setProductIds = setProduct.map((el) => {
+    if (el.isDiscount === false) {
+      total += parseInt(el.qty) * parseInt(el.price);
+    } else if (el.isDiscount === true) {
+      total += parseInt(el.qty) * parseInt(el.discount);
+    }
+    return el.productInfo;
+  });
+
+  const tires = await Tire.find({ _id: { $in: tireIds } });
+  const wheels = await Wheel.find({ _id: { $in: wheelIds } });
+  const products = await Product.find({ _id: { $in: productIds } });
+  const setProducts = await SetProduct.find({ _id: { $in: setProductIds } });
+
+  products.map((d, index) => {
+    const test = product.filter((el) => el.code === d.productCode);
+    if (test && test.length > 0) {
+      if (test[0]["qty"] <= d.setOf) {
+        products[index].qty = test[0]["qty"];
+      } else if (test[0]["qty"] > d.setOf) {
+        products[index].qty = d.setOf;
+      }
+    }
+  });
+
+  res.status(200).json({
+    success: true,
+    tires,
+    wheels,
+    products,
+    setProducts,
+    total,
+    prd: product,
+    carts,
+  });
+});
 
 exports.createOrder = asyncHandler(async (req, res) => {
   req.body.createUser = req.userId;
   req.body.status = (valueRequired(req.body.status) && req.body.status) || true;
+  const carts = req.body.carts;
 
-  if (req.body.userId) {
-    const user = await User.findById(req.body.userId);
-    req.body.lastName = req.body.lastName || user.lastName;
-    req.body.firstName = req.body.firstName || user.firstName;
-    req.body.phoneNumber = req.body.phoneNumber || user.phoneNumber;
-    req.body.createUser = req.body.userId;
-  }
+  const tire = carts.filter((cart) => cart.type === "tire");
+  const wheel = carts.filter((cart) => cart.type === "wheel");
+  const product = carts.filter((cart) => cart.type === "product");
+  const setProduct = carts.filter((cart) => cart.type === "setProduct");
+  let total = 0;
 
-  let totalPrice = 0;
-  if (req.body.tires) {
-    const tires = req.body.tires;
-    tires.map(async (tire) => {
-      const result = await Tire.findById(tire.productInfo);
-      if (result) {
-        totalPrice = totalPrice + result.price;
+  const tireIds = tire.map((el) => {
+    if (el.isDiscount === false) {
+      total += parseInt(el.price);
+    } else if (el.isDiscount === true) {
+      total += parseInt(el.discount);
+    }
+
+    if (el.status === false) {
+      throw new MyError(`Таны сонгосон ${el.name} дугуй дууссан байна`);
+    }
+
+    return el.productInfo;
+  });
+
+  const wheelIds = wheel.map((el) => {
+    if (el.isDiscount === false) {
+      total += parseInt(el.price);
+    } else if (el.isDiscount === true) {
+      total += parseInt(el.discount);
+    }
+    if (el.status === false) {
+      throw new MyError(`Таны сонгосон ${el.name} обуд дууссан байна`);
+    }
+
+    return el.productInfo;
+  });
+
+  const productIds = product.map((el) => {
+    if (el.isDiscount === false) {
+      total += parseInt(el.qty) * parseInt(el.price);
+    } else if (el.isDiscount === true) {
+      total += parseInt(el.qty) * parseInt(el.discount);
+    }
+
+    if (el.status === false) {
+      throw new MyError(`Таны сонгосон ${el.name} сэлбэг дууссан байна`);
+    }
+
+    return el.productInfo;
+  });
+
+  const setProductIds = setProduct.map((el) => {
+    if (el.isDiscount === false) {
+      total += parseInt(el.qty) * parseInt(el.price);
+    } else if (el.isDiscount === true) {
+      total += parseInt(el.qty) * parseInt(el.discount);
+    }
+
+    if (el.status === false) {
+      throw new MyError(`Таны сонгосон ${el.name} дугуй, обуд дууссан байна`);
+    }
+
+    return el.productInfo;
+  });
+
+  const tires = await Tire.find({ _id: { $in: tireIds } });
+  const wheels = await Wheel.find({ _id: { $in: wheelIds } });
+  const products = await Product.find({ _id: { $in: productIds } });
+  const setProducts = await SetProduct.find({ _id: { $in: setProductIds } });
+
+  products.map((d, index) => {
+    const test = product.filter((el) => el.code === d.productCode);
+    if (test && test.length > 0) {
+      if (test[0]["qty"] <= d.setOf) {
+        products[index].qty = test[0]["qty"];
+      } else if (test[0]["qty"] > d.setOf) {
+        throw new MyError("Сэлбэгний үлдэгдэл хүрэлцэхгүй байна");
       }
-    });
-  }
+    }
+  });
 
-  if (req.body.wheels) {
-    const wheels = req.body.wheels;
-    wheels.map(async (wheel) => {
-      const result = await Wheel.findById(wheel.productInfo);
-      if (result) {
-        totalPrice = totalPrice + result.price;
-      }
-    });
-  }
+  const user = await User.findById(req.userId);
+  req.body.lastName = req.body.lastName || user.lastName;
+  req.body.firstName = req.body.firstName || user.firstName;
+  req.body.phoneNumber = req.body.phoneNumber || user.phoneNumber;
 
   const d = new Date();
   const year = d.getFullYear() + "";
@@ -57,17 +187,37 @@ exports.createOrder = asyncHandler(async (req, res) => {
   const lastOrderNumber = await Order.findOne({}).sort({ createAt: -1 });
 
   if (lastOrderNumber) {
-    orderNumber = parseInt(lastOrderNumber.orderNumber.slice(7)) + 1;
+    if (
+      lastOrderNumber.orderNumber.slice(0, 7) ==
+      "O" + year.slice(2) + month + day
+    ) {
+      orderNumber = parseInt(lastOrderNumber.orderNumber.slice(7)) + 1;
+    }
   }
 
-  orderNumber = "O" + year + month + day + orderNumber;
-
+  orderNumber = "O" + year.slice(2) + month + day + orderNumber;
+  req.body.total = total;
   req.body.orderNumber = orderNumber;
 
   const order = await Order.create(req.body);
   res.status(200).json({
     success: true,
     data: order,
+    products,
+    setProducts,
+    tires,
+    wheels,
+    total,
+  });
+});
+
+exports.updateUserOrder = asyncHandler(async (req, res) => {
+  const result = await Order.findByIdAndUpdate(req.params.id, {
+    status: false,
+  });
+  res.status(200).json({
+    success: true,
+    data: result,
   });
 });
 
@@ -84,6 +234,59 @@ exports.getTodayCount = asyncHandler(async (req, res) => {
   });
 });
 
+exports.getUserOrders = asyncHandler(async (req, res) => {
+  // Эхлээд query - уудаа аваад хоосон үгүйг шалгаад утга олгох
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 25;
+
+  if (req.userId) {
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      throw new MyError("Хандах боломжгүй байна", 404);
+    }
+  } else {
+    throw new MyError("Нэвтэрч орно уу", 400);
+  }
+
+  // FIELDS
+  const query = Order.find({ createUser: req.userId }).sort({
+    createAt: -1,
+  });
+
+  const qc = query.toConstructor();
+  const clonedQuery = new qc();
+  const result = await clonedQuery.count();
+
+  const pagination = await paginate(page, limit, null, result);
+  query.skip(pagination.start - 1);
+  query.limit(limit);
+
+  const order = await query.exec();
+
+  res.status(200).json({
+    success: true,
+    count: order.length,
+    data: order,
+    pagination,
+  });
+});
+
+exports.getUserOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id)
+    .populate("createUser")
+    .populate("updateUser");
+
+  if (!order) {
+    throw new MyError("Тухайн өгөгдөл олдсонгүй. ", 404);
+  }
+
+  res.status(200).json({
+    success: true,
+    data: order,
+  });
+});
+
 exports.getOrders = asyncHandler(async (req, res) => {
   // Эхлээд query - уудаа аваад хоосон үгүйг шалгаад утга олгох
   const page = parseInt(req.query.page) || 1;
@@ -92,55 +295,41 @@ exports.getOrders = asyncHandler(async (req, res) => {
   const select = req.query.select;
 
   // FIELDS
-  const status = req.query.status;
-  const orderNumber = req.query.orderNumber;
-  const paid = req.query.paid;
+  const userInputs = req.query;
+  const arrayBooleanFields = ["status", "paid", "increase", "delivery"];
+  const arrayIntFields = ["total", "phoneNumber"];
+  const arrayStringFields = ["firstName", "lastName", "email", "address"];
   const paidType = req.query.paidType;
-  const firstName = req.query.firstName;
-  const lastName = req.query.lastName;
-  const phoneNumber = req.query.phoneNumber;
-  const email = req.query.email;
-  const userId = req.query.userId;
-
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
 
   const query = Order.find();
 
-  if (valueRequired(status)) {
-    if (status.split(",").length > 1) {
-      query.where("status").in(status.split(","));
-    } else query.where("status").equals(status);
-  }
+  arrayBooleanFields.map((field) => {
+    if (valueRequired(userInputs[field])) {
+      query.where(field).in(userInputs[field].split(","));
+    }
+  });
 
-  if (valueRequired(paid)) {
-    if (paid.split(",").length > 1) {
-      query.where("paid").in(paid.split(","));
-    } else query.where("paid").equals(paid);
-  }
+  arrayStringFields.map((field) => {
+    if (valueRequired(userInputs[field])) {
+      query.find({ field: RegexOptions(userInputs[field]) });
+    }
+  });
+
+  arrayIntFields.map((field) => {
+    if (valueRequired(userInputs[field])) {
+      query.find({ field: RegexOptions(parseInt(userInputs[field])) });
+    }
+  });
 
   if (valueRequired(orderNumber)) {
     query.find({ orderNumber: RegexOptions(orderNumber) });
   }
 
   if (valueRequired(paidType)) {
-    query.find({ paidType });
-  }
-
-  if (valueRequired(firstName)) {
-    query.find({ firstName: RegexOptions(firstName) });
-  }
-
-  if (valueRequired(lastName)) {
-    query.find({ lastName: RegexOptions(lastName) });
-  }
-
-  if (valueRequired(phoneNumber)) {
-    query.find({ phoneNumber: RegexOptions(phoneNumber) });
-  }
-
-  if (valueRequired(email)) {
-    query.find({ email: RegexOptions(email) });
+    const arrayList = paidType.split(",");
+    query.where("paidType").in(arrayList);
   }
 
   if (valueRequired(createUser)) {
@@ -154,13 +343,6 @@ exports.getOrders = asyncHandler(async (req, res) => {
     const userData = await userSearch(updateUser);
     if (userData) {
       query.where("updateUser").in(userData);
-    }
-  }
-
-  if (valueRequired(userId)) {
-    const userData = await userSearch(userId);
-    if (userData) {
-      query.where("userId").in(userId);
     }
   }
 
@@ -178,9 +360,6 @@ exports.getOrders = asyncHandler(async (req, res) => {
   }
 
   query.select(select);
-  query.populate("wheels.productInfo");
-  query.populate("tires.productInfo");
-  query.populate("userId");
   query.populate("createUser");
   query.populate("updateUser");
 
@@ -207,55 +386,41 @@ const getFullData = async (req, page) => {
   const select = req.query.select;
 
   // FIELDS
-  const status = req.query.status;
-  const orderNumber = req.query.orderNumber;
-  const paid = req.query.paid;
+  const userInputs = req.query;
+  const arrayBooleanFields = ["status", "paid", "increase", "delivery"];
+  const arrayIntFields = ["total", "phoneNumber"];
+  const arrayStringFields = ["firstName", "lastName", "email", "address"];
   const paidType = req.query.paidType;
-  const firstName = req.query.firstName;
-  const lastName = req.query.lastName;
-  const phoneNumber = req.query.phoneNumber;
-  const email = req.query.email;
-  const userId = req.query.userId;
-
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
 
   const query = Order.find();
 
-  if (valueRequired(status)) {
-    if (status.split(",").length > 1) {
-      query.where("status").in(status.split(","));
-    } else query.where("status").equals(status);
-  }
+  arrayBooleanFields.map((field) => {
+    if (valueRequired(userInputs[field])) {
+      query.where(field).in(userInputs[field].split(","));
+    }
+  });
 
-  if (valueRequired(paid)) {
-    if (paid.split(",").length > 1) {
-      query.where("paid").in(paid.split(","));
-    } else query.where("paid").equals(paid);
-  }
+  arrayStringFields.map((field) => {
+    if (valueRequired(userInputs[field])) {
+      query.find({ field: RegexOptions(userInputs[field]) });
+    }
+  });
+
+  arrayIntFields.map((field) => {
+    if (valueRequired(userInputs[field])) {
+      query.find({ field: RegexOptions(parseInt(userInputs[field])) });
+    }
+  });
 
   if (valueRequired(orderNumber)) {
     query.find({ orderNumber: RegexOptions(orderNumber) });
   }
 
   if (valueRequired(paidType)) {
-    query.find({ paidType });
-  }
-
-  if (valueRequired(firstName)) {
-    query.find({ firstName: RegexOptions(firstName) });
-  }
-
-  if (valueRequired(lastName)) {
-    query.find({ lastName: RegexOptions(lastName) });
-  }
-
-  if (valueRequired(phoneNumber)) {
-    query.find({ phoneNumber: RegexOptions(phoneNumber) });
-  }
-
-  if (valueRequired(email)) {
-    query.find({ email: RegexOptions(email) });
+    const arrayList = paidType.split(",");
+    query.where("paidType").in(arrayList);
   }
 
   if (valueRequired(createUser)) {
@@ -269,13 +434,6 @@ const getFullData = async (req, page) => {
     const userData = await userSearch(updateUser);
     if (userData) {
       query.where("updateUser").in(userData);
-    }
-  }
-
-  if (valueRequired(userId)) {
-    const userData = await userSearch(userId);
-    if (userData) {
-      query.where("userId").in(userId);
     }
   }
 
@@ -293,12 +451,8 @@ const getFullData = async (req, page) => {
   }
 
   query.select(select);
-
-  query.populate("wheels.productInfo");
-  query.populate("tires.productInfo");
-  query.populate("userId");
-  query.populate({ path: "createUser", select: "firstName -_id" });
-  query.populate({ path: "updateUser", select: "firstName -_id" });
+  query.populate("createUser");
+  query.populate("updateUser");
 
   const qc = query.toConstructor();
   const clonedQuery = new qc();
@@ -319,55 +473,41 @@ exports.excelData = asyncHandler(async (req, res) => {
   const select = req.query.select;
 
   // FIELDS
-  const status = req.query.status;
-  const orderNumber = req.query.orderNumber;
-  const paid = req.query.paid;
+  const userInputs = req.query;
+  const arrayBooleanFields = ["status", "paid", "increase", "delivery"];
+  const arrayIntFields = ["total", "phoneNumber"];
+  const arrayStringFields = ["firstName", "lastName", "email", "address"];
   const paidType = req.query.paidType;
-  const firstName = req.query.firstName;
-  const lastName = req.query.lastName;
-  const phoneNumber = req.query.phoneNumber;
-  const email = req.query.email;
-  const userId = req.query.userId;
-
   const createUser = req.query.createUser;
   const updateUser = req.query.updateUser;
 
   const query = Order.find();
 
-  if (valueRequired(status)) {
-    if (status.split(",").length > 1) {
-      query.where("status").in(status.split(","));
-    } else query.where("status").equals(status);
-  }
+  arrayBooleanFields.map((field) => {
+    if (valueRequired(userInputs[field])) {
+      query.where(field).in(userInputs[field].split(","));
+    }
+  });
 
-  if (valueRequired(paid)) {
-    if (paid.split(",").length > 1) {
-      query.where("paid").in(paid.split(","));
-    } else query.where("paid").equals(paid);
-  }
+  arrayStringFields.map((field) => {
+    if (valueRequired(userInputs[field])) {
+      query.find({ field: RegexOptions(userInputs[field]) });
+    }
+  });
+
+  arrayIntFields.map((field) => {
+    if (valueRequired(userInputs[field])) {
+      query.find({ field: RegexOptions(parseInt(userInputs[field])) });
+    }
+  });
 
   if (valueRequired(orderNumber)) {
     query.find({ orderNumber: RegexOptions(orderNumber) });
   }
 
   if (valueRequired(paidType)) {
-    query.find({ paidType });
-  }
-
-  if (valueRequired(firstName)) {
-    query.find({ firstName: RegexOptions(firstName) });
-  }
-
-  if (valueRequired(lastName)) {
-    query.find({ lastName: RegexOptions(lastName) });
-  }
-
-  if (valueRequired(phoneNumber)) {
-    query.find({ phoneNumber: RegexOptions(phoneNumber) });
-  }
-
-  if (valueRequired(email)) {
-    query.find({ email: RegexOptions(email) });
+    const arrayList = paidType.split(",");
+    query.where("paidType").in(arrayList);
   }
 
   if (valueRequired(createUser)) {
@@ -381,13 +521,6 @@ exports.excelData = asyncHandler(async (req, res) => {
     const userData = await userSearch(updateUser);
     if (userData) {
       query.where("updateUser").in(userData);
-    }
-  }
-
-  if (valueRequired(userId)) {
-    const userData = await userSearch(userId);
-    if (userData) {
-      query.where("userId").in(userId);
     }
   }
 
@@ -405,12 +538,8 @@ exports.excelData = asyncHandler(async (req, res) => {
   }
 
   query.select(select);
-
-  query.populate("wheels.productInfo");
-  query.populate("tires.productInfo");
-  query.populate("userId");
-  query.populate({ path: "createUser", select: "firstName -_id" });
-  query.populate({ path: "updateUser", select: "firstName -_id" });
+  query.populate("createUser");
+  query.populate("updateUser");
 
   const qc = query.toConstructor();
   const clonedQuery = new qc();
@@ -434,10 +563,7 @@ exports.excelData = asyncHandler(async (req, res) => {
 exports.getOrder = asyncHandler(async (req, res, next) => {
   const order = await Order.findById(req.params.id)
     .populate("createUser")
-    .populate("updateUser")
-    .populate("wheels.productInfo")
-    .populate("tires.productInfo")
-    .populate("userId");
+    .populate("updateUser");
 
   if (!order) {
     throw new MyError("Тухайн өгөгдөл олдсонгүй. ", 404);

@@ -7,6 +7,22 @@ const InvoiceSchema = new mongoose.Schema({
     default: false,
   },
 
+  qr_text: {
+    type: String,
+  },
+
+  qr_image: {
+    type: String,
+  },
+
+  qPay_shortUrl: {
+    type: String,
+  },
+
+  qPay_deeplink: {
+    type: String,
+  },
+
   invoice_id: {
     type: String,
   },
@@ -19,8 +35,10 @@ const InvoiceSchema = new mongoose.Schema({
 
   sender_branch_code: {
     type: String,
-    enum: ["order"],
-    default: "order",
+  },
+
+  callback_url: {
+    type: String,
   },
 
   order: {

@@ -10,6 +10,10 @@ const {
   updateOrder,
   getOrder,
   getTodayCount,
+  cartCheck,
+  updateUserOrder,
+  getUserOrders,
+  getUserOrder,
 } = require("../controller/Order");
 
 router
@@ -17,7 +21,17 @@ router
   .post(protect, createOrder)
   .get(protect, authorize("admin", "operator"), getOrders);
 
-router.route("/todaycount").get(protect, getTodayCount);
+router.route("/cart").post(cartCheck);
+router.route("/user").get(protect, getUserOrders);
+
+router
+  .route("/user/:id")
+  .get(protect, getUserOrder)
+  .put(protect, updateUserOrder);
+router
+  .route("/todaycount")
+  .get(protect, authorize("admin", "operator"), getTodayCount);
+
 router
   .route("/count")
   .get(protect, authorize("admin", "operator"), getCountOrder);

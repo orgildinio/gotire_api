@@ -24,43 +24,9 @@ const OrderSchema = new mongoose.Schema({
     default: "none",
   },
 
-  tires: [
-    {
-      productInfo: {
-        type: mongoose.Schema.ObjectId,
-        ref: "Tire",
-      },
-      picture: {
-        type: String,
-      },
-      name: {
-        type: String,
-      },
-      price: {
-        type: Number,
-      },
-    },
-  ],
+  carts: [{ type: Object }],
 
-  wheels: [
-    {
-      productInfo: {
-        type: mongoose.Schema.ObjectId,
-        ref: "Wheel",
-      },
-      picture: {
-        type: String,
-      },
-      name: {
-        type: String,
-      },
-      price: {
-        type: Number,
-      },
-    },
-  ],
-
-  totalPrice: {
+  total: {
     type: Number,
     trim: true,
   },
@@ -89,7 +55,6 @@ const OrderSchema = new mongoose.Schema({
 
   email: {
     type: String,
-    unique: true,
     trim: true,
     match: [
       /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
@@ -97,9 +62,23 @@ const OrderSchema = new mongoose.Schema({
     ],
   },
 
-  userId: {
-    type: mongoose.Schema.ObjectId,
-    ref: "User",
+  address: {
+    type: String,
+  },
+
+  comment: {
+    type: String,
+    trim: true,
+  },
+
+  increase: {
+    type: Boolean,
+    default: false,
+  },
+
+  delivery: {
+    type: Boolean,
+    default: false,
   },
 
   createAt: {

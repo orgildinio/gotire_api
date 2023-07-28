@@ -5,13 +5,17 @@ const Invoice = require("../models/Invoice");
 const MyError = require("../utils/myError");
 const Order = require("../models/Order");
 const { valueRequired } = require("../lib/check");
+const Tire = require("../models/Tire");
+const Wheel = require("../models/Wheel");
+const SetProduct = require("../models/SetProduct");
+const Product = require("../models/Product");
 
-const getQpayAccess = () => {
+const getQpayAccess = async () => {
   let data = "";
-
-  var username = "ZAYA_ANANDA";
-  var password = "BpQqHffC";
-  var auth = "Basic WkFZQV9BTkFOREE6QnBRcUhmZkM=";
+  const currentDate = new Date().toJSON().slice(0, 10);
+  var username = "GOTIRE_MN";
+  var password = "4SQSg3kh";
+  var auth = "Basic R09USVJFX01OOjRTUVNnM2to=";
 
   let config = {
     method: "post",
@@ -25,68 +29,135 @@ const getQpayAccess = () => {
     data: data,
   };
 
-  axios
-    .request(config)
-    .then(async (response) => {
-      await Qpay.create(response.data);
-    })
-    .catch((error) => {
-      return error;
+  const lastQpayAccess = await Qpay.findOne({}).sort({ createAt: -1 });
+
+  if (
+    !lastQpayAccess ||
+    lastQpayAccess.createAt.toJSON().slice(0, 10) < currentDate
+  ) {
+    axios.request(config).then(async (response) => {
+      const result = await Qpay.create(response.data);
+      console.log(result);
+      return result.access_token;
     });
+  } else {
+    return lastQpayAccess.access_token;
+  }
+
+  //   .request(config)
+  //   .then(async (response) => {
+  //     const result = await Qpay.create(response.data);
+  //     return result;
+  //   })
+  //   .catch((error) => {
+  //     return error;
+  //   });
 };
 
-exports.getQpayToken = asyncHandler(async (req, res) => {
-  const currentDate = new Date().toJSON().slice(0, 10);
-  const lastQpayData = await Qpay.findOne({}).sort({ createAt: -1 });
-  if (!lastQpayData) {
-    getQpayAccess();
-  } else if (lastQpayData.createAt.toJSON().slice(0, 10) < currentDate) {
-    getQpayAccess();
-  }
-
-  res.status(200).json({
-    success: true,
-  });
-});
-
 exports.createInvoice = asyncHandler(async (req, res) => {
-  let sender_invoice_no = req.body.sender_invoice_no;
+  const accessToken = await getQpayAccess();
 
-  if (valueRequired(req.body.sender_branch_code)) {
-    if (req.body.sender_branch_code === "course") {
-      sender_invoice_no = 1;
-      const lastInvoice = await Invoice.findOne({
-        sender_branch_code: "course",
-      }).sort({ createAt: -1 });
-
-      if (lastInvoice) {
-        sender_invoice_no =
-          parseInt(lastInvoice.sender_invoice_no.substring(1)) + 1;
-      }
-      req.body.sender_invoice_no = "C" + sender_invoice_no;
-    }
-  }
-
-  let data = JSON.stringify({
-    invoice_code: "ZAYA_ANANDA_INVOICE",
-    sender_invoice_no: req.body.sender_invoice_no,
-    invoice_receiver_code: "terminal",
-    invoice_description: req.body.invoice_description,
-    sender_branch_code: req.body.sender_branch_code,
-    amount: req.body.amount,
-    callback_url: `${process.env.BASE}payment/call?invoice=${req.body.sender_invoice_no}`,
-  });
-
-  const accessToken = await Qpay.findOne({}).sort({ createAt: -1 });
-  const currentDate = new Date().toJSON().slice(0, 10);
   if (!accessToken) {
-    getQpayAccess();
     throw new MyError("Дахин оролдоно уу");
   }
 
-  if (accessToken.createAt.toJSON().slice(0, 10) < currentDate) {
-    getQpayAccess();
-    this.createInvoice(req);
+  const sender_invoice_no = req.body.sender_invoice_no;
+  const sender_branch_code = "web";
+  const invoice_description = req.body.invoice_description;
+  const amount = req.body.amount;
+
+  let data = JSON.stringify({
+    invoice_code: "GOTIRE_MN_INVOICE",
+    sender_invoice_no: sender_invoice_no,
+    invoice_receiver_code: "terminal",
+    invoice_description: invoice_description,
+    sender_branch_code: sender_branch_code,
+    amount: amount,
+    callback_url: `${process.env.BASE}payment/call?invoice=${sender_invoice_no}`,
+  });
+
+  const invoice = await Invoice.findOne({
+    sender_invoice_no: sender_invoice_no,
+  });
+
+  const order = await Order.findOne({
+    orderNumber: sender_invoice_no,
+  });
+
+  if (order) {
+    const carts = order.carts;
+
+    const tire = carts.filter((cart) => cart.type === "tire");
+    const wheel = carts.filter((cart) => cart.type === "wheel");
+    const product = carts.filter((cart) => cart.type === "product");
+    const setProduct = carts.filter((cart) => cart.type === "setProduct");
+
+    const tireIds = tire.map((el) => {
+      return el.productInfo;
+    });
+
+    const wheelIds = wheel.map((el) => {
+      return el.productInfo;
+    });
+    const setProductIds = setProduct.map((el) => {
+      return el.productInfo;
+    });
+
+    const productIds = product.map((el) => {
+      return el.productInfo;
+    });
+
+    const resultProduct = await Product.find({
+      _id: { $in: productIds },
+      status: false,
+    });
+
+    if (resultProduct && resultProduct.length > 0) {
+      order.status = false;
+      order.save();
+      throw new MyError(` Сэлбэг зарагдсан байна`, 404);
+    }
+
+    const resultTire = await Tire.find({
+      _id: { $in: tireIds },
+      status: false,
+    });
+
+    if (resultTire && resultTire.length > 0) {
+      order.status = false;
+      order.save();
+      throw new MyError(` Дугуй зарагдсан байна`, 404);
+    }
+
+    const resultWheel = await Wheel.find({
+      _id: { $in: wheelIds },
+      status: false,
+    });
+
+    if (resultWheel && resultTire.length > 0) {
+      order.status = false;
+      order.save();
+      throw new MyError(` Обуд зарагдсан байна`, 404);
+    }
+
+    const resultSetOf = await SetProduct.find({
+      _id: { $in: setProductIds },
+      status: false,
+    });
+
+    if (resultSetOf && resultSetOf.length > 0) {
+      order.status = false;
+      order.save();
+      throw new MyError(`Дугуй обуд зарагдсан байна`, 404);
+    }
+  }
+
+  if (invoice) {
+    res.status(200).json({
+      success: true,
+      invoice,
+    });
+    return;
   }
 
   let config = {
@@ -95,7 +166,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
     url: "https://merchant.qpay.mn/v2/invoice",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     data: data,
   };
@@ -103,24 +174,19 @@ exports.createInvoice = asyncHandler(async (req, res) => {
   const response = await axios.request(config);
 
   if (response) {
-    let course = null;
-    if (valueRequired(req.body.course)) {
-      course = req.body.course;
-    }
-
     let invoiceData = {
       invoice_id: response.data.invoice_id,
-      sender_invoice_no: req.body.sender_invoice_no,
+      qr_text: response.data.qr_text,
+      qr_image: response.data.qr_image,
+      qPay_shortUrl: response.data.qPay_shortUrl,
+      qPay_deeplink: response.data.qPay_deeplink,
+      sender_invoice_no: sender_invoice_no,
       invoice_receiver_code: "terminal",
-      invoice_description: req.body.invoice_description,
-      sender_branch_code: req.body.sender_branch_code,
-      amount: req.body.amount,
+      invoice_description: invoice_description,
+      sender_branch_code: sender_branch_code,
+      callback_url: `${process.env.BASE}payment/call?invoice=${sender_invoice_no}`,
+      amount: amount,
     };
-
-    if (req.body.sender_branch_code == "course") {
-      invoiceData.course = req.body.course;
-      invoiceData.userId = req.body.userId;
-    }
 
     const invoice = await Invoice.create(invoiceData);
 
@@ -139,10 +205,11 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 exports.getCallBackPayment = asyncHandler(async (req, res) => {
   const invoice = req.query.invoice;
   const result = await Invoice.findOne({ sender_invoice_no: invoice });
-  const accessToken = await Qpay.findOne({}).sort({ createAt: -1 });
+
+  const accessToken = await getQpayAccess();
 
   if (!accessToken) {
-    getQpayAccess();
+    throw new MyError("Дахин оролдоно уу");
   }
 
   if (!result) {
@@ -155,7 +222,7 @@ exports.getCallBackPayment = asyncHandler(async (req, res) => {
     url: "https://merchant.qpay.mn/v2/payment/check",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     data: JSON.stringify({
       object_type: "INVOICE",
@@ -182,20 +249,75 @@ exports.getCallBackPayment = asyncHandler(async (req, res) => {
   }
 
   if (result.isPaid === true) {
-    throw new MyError("Төлбөр төлөгдсөн байна");
+    res.status(200).json({
+      success: true,
+    });
+    return;
   }
 
-  result.isPaid = true;
-  result.save();
-
   const order = await Order.findOne({ orderNumber: invoice });
+
   if (order) {
     order.paidType = "qpay";
     order.totalPrice = result.amount;
     order.paid = true;
     order.status = true;
     order.save();
+    const carts = order.carts;
+
+    const tire = carts.filter((cart) => cart.type === "tire");
+    const wheel = carts.filter((cart) => cart.type === "wheel");
+    const product = carts.filter((cart) => cart.type === "product");
+    const setProduct = carts.filter((cart) => cart.type === "setProduct");
+    let total = 0;
+
+    const tireIds = tire.map((el) => {
+      return el.productInfo;
+    });
+
+    const wheelIds = wheel.map((el) => {
+      return el.productInfo;
+    });
+    const setProductIds = setProduct.map((el) => {
+      return el.productInfo;
+    });
+
+    product.map(async (el) => {
+      const result = await Product.findById(el.productInfo);
+      if (result) {
+        if (result.setOf - el.qty == 0) {
+          result.status = false;
+          result.setOf = result.setOf - el.qty;
+        } else if (result.setOf - el.qty < 0) {
+          result.setOf = result.setOf;
+        } else {
+          result.setOf = result.setOf - el.qty;
+        }
+
+        result.save();
+      }
+    });
+
+    await Tire.updateMany(
+      { _id: { $in: tireIds } },
+      { $set: { status: false } },
+      { multi: true }
+    );
+    await Wheel.updateMany(
+      { _id: { $in: wheelIds } },
+      { $set: { status: false } },
+      { multi: true }
+    );
+
+    await SetProduct.updateMany(
+      { _id: { $in: setProductIds } },
+      { $set: { status: false } },
+      { multi: true }
+    );
   }
+
+  result.isPaid = true;
+  result.save();
 
   res.status(200).json({
     success: true,
