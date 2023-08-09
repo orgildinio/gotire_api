@@ -21,7 +21,7 @@ exports.createWheel = asyncHandler(async (req, res, next) => {
   } else {
     req.body.slug = slugify(req.body.name);
   }
-  c;
+
   let orderNumber = 1;
 
   const codeNumber = await Wheel.findOne({ status: true }).sort({ code: 1 });
