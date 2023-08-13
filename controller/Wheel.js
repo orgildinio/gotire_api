@@ -310,9 +310,9 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
           convertSort = { [splite[0]]: -1 };
         }
         if (splite[0] != "undefined") query.sort(convertSort);
+      } else {
+        query.sort(sort);
       }
-    } else {
-      query.sort(sort);
     }
   }
 
