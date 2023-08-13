@@ -891,19 +891,6 @@ exports.updateWheel = asyncHandler(async (req, res, next) => {
     req.body.wheelCategories = [];
   }
 
-  let orderNumber = 1;
-
-  const codeNumber = await Wheel.findOne({ status: true }).sort({ code: -1 });
-
-  if (valueRequired(codeNumber) && valueRequired(codeNumber.code)) {
-    orderNumber += parseInt(codeNumber.code);
-  }
-
-  req.body.wheelCode =
-    "W" + wheel.diameter + "H" + wheel.boltPattern + "-" + orderNumber;
-
-  req.body.code = orderNumber;
-
   req.body.updateUser = req.userId;
   req.body.updateAt = Date.now();
 
