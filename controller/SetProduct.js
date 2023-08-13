@@ -95,7 +95,7 @@ exports.getSetProducts = asyncHandler(async (req, res, next) => {
   let sort = req.query.sort || { createAt: -1 };
   const select = req.query.select;
 
-  if (sort !== "undefined:undefined") {
+  if (sort == "undefined:undefined") {
     sort = "new";
   }
 
