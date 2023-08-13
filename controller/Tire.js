@@ -25,7 +25,8 @@ exports.createTire = asyncHandler(async (req, res, next) => {
 
   const uniqueName = await Tire.find({ name: RegexOptions(req.body.name) });
   if (uniqueName.length > 0) {
-    req.body.slug = slugify(req.body.name + "_" + uniqueName.length + 1);
+    const slugCount = uniqueName.length + 1;
+    req.body.slug = slugify(req.body.name + "_" + slugCount);
   } else {
     req.body.slug = slugify(req.body.name);
   }
@@ -1050,7 +1051,8 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
   });
 
   if (uniqueName.length > 0) {
-    req.body.slug = slugify(req.body.name + "_" + uniqueName.length + 1);
+    const slugCount = uniqueName.length + 1;
+    req.body.slug = slugify(req.body.name + "_" + slugCount);
   } else {
     req.body.slug = slugify(req.body.name);
   }

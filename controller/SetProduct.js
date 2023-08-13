@@ -46,7 +46,8 @@ exports.createSetProduct = asyncHandler(async (req, res, next) => {
 
   const uniqueName = await SetProduct.find({ name: req.body.name });
   if (uniqueName.length > 0) {
-    req.body.slug = slugify(req.body.name + "_" + uniqueName.length);
+    const slugCount = uniqueName.length + 1;
+    req.body.slug = slugify(req.body.name + "_" + slugCount);
   } else {
     req.body.slug = slugify(req.body.name);
   }
@@ -1315,7 +1316,8 @@ exports.updateSetProduct = asyncHandler(async (req, res, next) => {
   const name = req.body.name;
   const uniqueName = await SetProduct.find({ name: req.body.name });
   if (uniqueName.length > 1) {
-    req.body.slug = slugify(name + "_" + uniqueName.length + 1);
+    const slugCount = uniqueName.length + 1;
+    req.body.slug = slugify(req.body.name + "_" + slugCount);
   } else {
     req.body.slug = slugify(name);
   }
