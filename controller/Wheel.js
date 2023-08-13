@@ -882,10 +882,10 @@ exports.updateWheel = asyncHandler(async (req, res, next) => {
     throw new MyError("Тухайн өгөгдөл олдсонгүй олдсонгүй. ", 404);
   }
 
-  const uniqueName = await Wheel.find({ name: RegexOptions(req.body.name) });
+  const uniqueName = await Wheel.find({ name: req.body.name });
 
   if (uniqueName.length > 0) {
-    const slugCount = uniqueName.length + 1;
+    const slugCount = uniqueName.length + 1 + wheel.code;
     req.body.slug = slugify(req.body.name + "_" + slugCount);
   } else {
     req.body.slug = slugify(req.body.name);

@@ -1051,7 +1051,7 @@ exports.updateTire = asyncHandler(async (req, res, next) => {
   });
 
   if (uniqueName.length > 0) {
-    const slugCount = uniqueName.length + 1;
+    const slugCount = uniqueName.length + 1 + tire.code;
     req.body.slug = slugify(req.body.name + "_" + slugCount);
   } else {
     req.body.slug = slugify(req.body.name);

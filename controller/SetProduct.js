@@ -1316,7 +1316,7 @@ exports.updateSetProduct = asyncHandler(async (req, res, next) => {
   const name = req.body.name;
   const uniqueName = await SetProduct.find({ name: req.body.name });
   if (uniqueName.length > 1) {
-    const slugCount = uniqueName.length + 1;
+    const slugCount = uniqueName.length + 1 + setof.code;
     req.body.slug = slugify(req.body.name + "_" + slugCount);
   } else {
     req.body.slug = slugify(name);
