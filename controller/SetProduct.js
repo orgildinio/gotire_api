@@ -66,7 +66,7 @@ exports.createSetProduct = asyncHandler(async (req, res, next) => {
   let orderNumber = 1;
 
   const codeNumber = await SetProduct.findOne({ status: true }).sort({
-    code: 1,
+    code: -1,
   });
 
   if (valueRequired(codeNumber) && valueRequired(codeNumber.code)) {

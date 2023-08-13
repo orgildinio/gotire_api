@@ -24,7 +24,7 @@ exports.createWheel = asyncHandler(async (req, res, next) => {
 
   let orderNumber = 1;
 
-  const codeNumber = await Wheel.findOne({ status: true }).sort({ code: 1 });
+  const codeNumber = await Wheel.findOne({ status: true }).sort({ code: -1 });
 
   if (valueRequired(codeNumber) && valueRequired(codeNumber.code)) {
     orderNumber += parseInt(codeNumber.code);
@@ -877,8 +877,6 @@ exports.updateWheel = asyncHandler(async (req, res, next) => {
 
   const uniqueName = await Wheel.find({ name: RegexOptions(req.body.name) });
 
-  console.log(uniqueName);
-
   if (uniqueName.length > 0) {
     req.body.slug = slugify(req.body.name + "_" + uniqueName.length + 1);
   } else {
@@ -892,6 +890,19 @@ exports.updateWheel = asyncHandler(async (req, res, next) => {
   if (!valueRequired(req.body.wheelCategories)) {
     req.body.wheelCategories = [];
   }
+
+  let orderNumber = 1;
+
+  const codeNumber = await Wheel.findOne({ status: true }).sort({ code: -1 });
+
+  if (valueRequired(codeNumber) && valueRequired(codeNumber.code)) {
+    orderNumber += parseInt(codeNumber.code);
+  }
+
+  req.body.wheelCode =
+    "W" + wheel.diameter + "H" + wheel.boltPattern + "-" + orderNumber;
+
+  req.body.code = orderNumber;
 
   req.body.updateUser = req.userId;
   req.body.updateAt = Date.now();
