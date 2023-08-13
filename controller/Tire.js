@@ -343,6 +343,8 @@ exports.getTires = asyncHandler(async (req, res, next) => {
           convertSort = { [spliteSort[0]]: -1 };
         }
         if (spliteSort[0] != "undefined") query.sort(convertSort);
+      } else {
+        query.sort(sort);
       }
 
       const splite = sort.split("_");
@@ -354,9 +356,9 @@ exports.getTires = asyncHandler(async (req, res, next) => {
           convertSort = { [splite[0]]: -1 };
         }
         if (splite[0] != "undefined") query.sort(convertSort);
+      } else {
+        query.sort(sort);
       }
-    } else {
-      query.sort(sort);
     }
   }
 
