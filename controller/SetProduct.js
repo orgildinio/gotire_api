@@ -95,6 +95,10 @@ exports.getSetProducts = asyncHandler(async (req, res, next) => {
   let sort = req.query.sort || { createAt: -1 };
   const select = req.query.select;
 
+  if (sort !== "undefined:undefined") {
+    sort = "new";
+  }
+
   //  FIELDS
   const tiresize = req.query.tiresize;
   const setProductCategories = req.query.categoryname;

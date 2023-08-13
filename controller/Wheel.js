@@ -137,6 +137,10 @@ exports.getWheels = asyncHandler(async (req, res, next) => {
   let sort = req.query.sort || "new";
   const select = req.query.select;
 
+  if (sort !== "undefined:undefined") {
+    sort = "new";
+  }
+
   const fields = [
     "diameter",
     "width",
