@@ -73,7 +73,7 @@ exports.getMostTire = asyncHandler(async (req, res) => {
 exports.getTires = asyncHandler(async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 25;
-  let sort = req.query.sort || { createAt: -1 };
+  let sort = req.query.sort || "new";
   const select = req.query.select;
 
   // NEWS FIELDS
