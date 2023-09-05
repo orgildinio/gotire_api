@@ -372,6 +372,7 @@ exports.getTires = asyncHandler(async (req, res, next) => {
   query.populate("updateUser");
   query.populate("make");
   query.populate("tireCategories");
+  query.populate("modal");
 
   const qc = query.toConstructor();
   const clonedQuery = new qc();
